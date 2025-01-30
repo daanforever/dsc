@@ -1,0 +1,7 @@
+// Config version
+version : 1
+
+// Default configuration
+config : {
+  "admins" : ["76561197979302088"]
+}
