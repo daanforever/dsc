@@ -13,4 +13,4 @@ apiVersion : [ 3, 0 ]
 depends : [ "lib_rotate" ]
 
 // Lua files to load.
-files : [ "dan_dsc.lua" ]
+files : [ "dan_lib.lua", "dan_dsc.lua", "dan_pb.lua" ]

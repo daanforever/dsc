@@ -16,34 +16,17 @@ DONE:
 
 --]]
 
-print( "Callbacks:" ); dump( Callback, "  " )
-
 local addon_storage = ...
 local config = addon_storage.config
-local members = {}
 local session_time_duration = 0
 local scheduled_broadcasts = {}
 local scheduled_restart = 0
 local scheduled_advance = 0
 
-
-if type( config.admins ) ~= "table" then config.admins = {} end
-
 -- The tick that processes all queued sends
 local function tick()
 
 	local now = GetServerUptimeMs()
-
-	for time, message in pairs( scheduled_broadcasts ) do
-
-		if now >= time then
-
-			SendChatToAll("[Server]: " .. message)
-			scheduled_broadcasts[ time ] = nil
-
-		end
-
-	end
 
 	if scheduled_restart > 0 and now >= scheduled_restart then
 
@@ -63,64 +46,105 @@ end
 
 -- Helper functions -----------------------------------------------------------
 
-local function log( text )
-	local text = text or ''
-	local ts = ''
-	ts = tostring("[" .. os.date("%Y-%m-%d %H:%M:%S") .. "] [DSC]: " .. text)
-	return print(ts)
-end
-
--- Usage: is_admin()
-local function is_admin( steamid )
-	local result = false
-
-	for i,v in pairs(config.admins) do
-		if v == steamid then result = true end
-	end
-
-	return result
-end
-
 local function dump_list( names, list )
 		for _, name in ipairs( names ) do
 			print( "- " .. name .. " = " .. tostring( list[ name ] ) )
 		end
 end
 
-local function starts_with(str, start)
+local function starts_with( str, start )
 	return str:sub(1, #start) == start
  end
 
--- Usage: broadcast_later(1, "Hello")
--- delay in seconds
-local function broadcast_later(delay, message)
-	local send_time = delay * 1000 + GetServerUptimeMs();
-	scheduled_broadcasts[send_time] = message
+local function restart_later( delay )
+	scheduled_restart = delay + GetServerUptimeMs();
 end
 
-local function restart_later(delay)
-	scheduled_restart = delay * 1000 + GetServerUptimeMs();
+local function handle_command_players( event )
+
+	for refid, member in pairs(dan.members) do
+		refid = string.format("%-7d", refid)
+		SendChatToMember( event.refid,  refid .. " " .. member.name)
+	end
+
+end
+
+local function handle_command_restart( message )
+
+	local default_restart_time = 60000
+	local restart_time = tonumber(string.match(message, '%d+')) * 1000
+
+	if restart_time == nil then restart_time = default_restart_time end
+
+	log(
+		"Received request to restart the server from " .. 
+		dan.members[event.refid].name .. " " .. 
+		dan.members[event.refid].steamid .. " in " .. restart_time .. " seconds"
+	)
+
+	broadcast_later(0, {"The server will restart in " .. math.floor(restart_time / 1000) .. " seconds."})
+
+	if restart_time > 60000 then
+		broadcast_later(restart_time - 60000, {"The server will restart in 60 seconds."})
+	end
+	
+	if restart_time > 30000 then
+		broadcast_later(restart_time - 30000, {"The server will restart in 30 seconds."})
+	end
+
+	if restart_time > 10000 then
+		broadcast_later(restart_time - 10000, {"The server will restart in 10 seconds."})
+	end
+
+	restart_later(restart_time)
+
+end
+
+local function handle_command_kick( event )
+
+	local refid, reason = string.match(event.attributes.Message, '/kick%s+(%d+)%s+(.*)')
+
+	if ( refid == nil ) or ( reason == nil ) then
+
+		SendChatToMember(event.refid, "/kick ID reason")
+		SendChatToMember(event.refid, "Example: /kick 0 rammed and blocked the road")
+
+	elseif not dan.members[ tonumber( refid ) ] then
+
+		SendChatToMember(event.refid, "Player with ID " .. refid .. " not found")
+
+	else
+
+		refid = tonumber(refid)
+		message = "Kicked " .. dan.members[refid].name .. " by " .. 
+		           dan.members[event.refid].name .. " \"" .. reason .. "\""
+		
+		SendChatToAll()
+		KickMember( refid )
+		log( message )
+
+	end
+
+end
+
+local function handle_command_advance( event )
+
+	SendChatToAll(dan.members[event.refid].name .. " changed session")
+	log("Received request to advance session from " .. dan.members[event.refid].name .. " " .. dan.members[event.refid].steamid)
+	AdvanceSession(true)
+
 end
 
 -- ----------------------------------------------------------------------------
 -- Main addon callback
-local function addon_callback( callback, ... )
+local function dsc_main( callback, ... )
 
 	-- Regular tick
 	if callback == Callback.Tick then
+
 		tick()
-	-- else
-	-- 	local event = ...
+		flush()
 
-	-- 	log("Dump callback: " .. value_to_callback[ callback ])
-		
-	-- 	if type(event) == "table" then
-	-- 		dump_typed(event)
-	-- 	else
-	-- 		log(event)
-	-- 	end
-
-	-- 	log("************")
 	end
 
   -- Disable overtime
@@ -132,7 +156,7 @@ local function addon_callback( callback, ... )
 
 		if session.attributes["SessionState"] == "Race" and session.attributes["SessionPhase"] == "Green" then
 
-			if session.attributes["SessionTimeElapsed"] == session.attributes["SessionTimeDuration"] then
+			if session.attributes["SessionTimeElapsed"] >= session.attributes["SessionTimeDuration"] then
 				-- Elapsed >= Duration
 
 				if scheduled_advance == 0 then
@@ -161,6 +185,9 @@ local function addon_callback( callback, ... )
 	if callback == Callback.EventLogged then
 		local event = ...
 
+		log("Dump callback: " .. value_to_callback[ callback ])
+		dump_typed( event )
+
 		if ( event.type == "Session" ) and ( event.name == "StateChanged" ) then
 			if ( event.attributes.NewState == "Loading" ) then
 				SavePersistentData()
@@ -168,7 +195,7 @@ local function addon_callback( callback, ... )
 		end
 
 		if ( event.type == "Session" ) and ( event.name == "SessionDestroyed" ) then
-			members = {}
+			dan.members = {}
 		end
 
 		-- Handle event.type Player
@@ -176,22 +203,12 @@ local function addon_callback( callback, ... )
 
 			-- PlayerJoined
 			if event.name == "PlayerJoined" then
-				members[event.refid] = {}
-				members[event.refid].name = event.attributes.Name
-				members[event.refid].steamid = tostring(event.attributes.SteamId)
-				members[event.refid].is_admin = is_admin(members[event.refid].steamid)
-
-				if members[event.refid].is_admin then
-					SendChatToMember( event.refid, "[DRB]: Administrator privileges granted")
-					log("Joined admin " .. members[event.refid].name)
-				else
-					log("Joined user " .. members[event.refid].name)
-				end
+				member_add( event )
 			end
 
 			-- PlayerLeft
 			if event.name == "PlayerLeft" then
-				members[event.refid] = nil	
+				member_del( event )
 			end
 
 			if event.name == "PlayerChat" then
@@ -199,42 +216,19 @@ local function addon_callback( callback, ... )
   			local message = event.attributes.Message
 
 				-- Handle admin commands
-				if members[event.refid].is_admin then
-
+				if dan.members[event.refid].is_admin then
 
 					if starts_with(message, "/restart") then
 
-						local default_restart_time = 60
-						local restart_time = tonumber(string.match(message, '%d+'))
-
-						if restart_time == nil then restart_time = default_restart_time end
-
-						log("Received request to restart the server from " .. members[event.refid].name .. " " .. members[event.refid].steamid .. " in " .. restart_time .. " seconds")
-
-						broadcast_later(0, "The server will restart in " .. restart_time .. " seconds.")
-
-						if restart_time > 60 then
-							broadcast_later(restart_time - 60, "The server will restart in 60 seconds.")
-						end
-						
-						if restart_time > 30 then
-							broadcast_later(restart_time - 30, "The server will restart in 30 seconds.")
-						end
-
-						if restart_time > 10 then
-							broadcast_later(restart_time - 10, "The server will restart in 10 seconds.")
-						end
-
-						restart_later(restart_time)
+						handle_command_restart( message )
 
 					elseif message == "/advance" or message == "/next" then
 
-						log("Received request to advance session from " .. members[event.refid].name .. " " .. members[event.refid].steamid)
-						AdvanceSession(true)
+						handle_command_advance( event )
 
 					elseif message == "/stop" then
 
-						log("Received request to stop session from " .. members[event.refid].name .. " " .. members[event.refid].steamid)
+						log("Received request to stop session from " .. dan.members[event.refid].name .. " " .. dan.members[event.refid].steamid)
 						StopSession()
 
 					elseif starts_with(message, "/maxplayers") then
@@ -247,26 +241,37 @@ local function addon_callback( callback, ... )
 
 						SetNextSessionAttributes( attributes )
 
-					end	
+	  			elseif message == "/players" then
+
+	  				handle_command_players( event )
+
+	  			elseif starts_with(message, "/kick") then
+
+	  				handle_command_kick( event )
+
+	  			end
+
 
 				else -- user is not an admin
 
-					log("CHAT [" .. members[event.refid].name .. "] " .. message)
+					log("CHAT [" .. dan.members[event.refid].name .. "] " .. message)
 
-				end -- members[event.refid].is_admin
+				end -- dan.members[event.refid].is_admin
 
 			end -- event.name == "PlayerChat"
 
 		end -- event.type == "Player"
 
 	end -- callback == Callback.EventLogged
-end -- function addon_callback
+
+
+	pb_main(callback, ...)
+end -- function dsc_main
 
 -- Main
-RegisterCallback( addon_callback )
+RegisterCallback( dsc_main )
 -- EnableCallback( Callback.Tick )
 -- EnableCallback( Callback.MemberStateChanged )
--- EnableCallback( Callback.EventLogged )
 -- EnableCallback( Callback.ServerStateChanged )
 
 -- EnableCallback( Callback.MemberStateChanged )
@@ -281,9 +286,9 @@ EnableCallback( Callback.SessionAttributesChanged )
 -- EnableCallback( Callback.SessionManagerStateChanged )
 -- EnableCallback( Callback.ParticipantCreated )
 -- EnableCallback( Callback.ParticipantRemoved )
-EnableCallback( Callback.NextSessionAttributesChanged )
+-- EnableCallback( Callback.NextSessionAttributesChanged )
 -- EnableCallback( Callback.MemberAttributesChanged )
 
-log("DSC activated")
+print("DSC activated")
 
 -- EOF --
