@@ -292,7 +292,7 @@ local function dsc_main( callback, ... )
 
 
 	-- pb_main( callback, ... )
-	invoke_modules( ... )
+	invoke_modules( callback, ... )
 end -- function dsc_main
 
 -- Main

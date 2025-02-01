@@ -146,26 +146,21 @@ function pb_main( callback, ... )
 
     local event = ...
 
-    if type( event ) == "table" then
+    if ( event.type == "Session" ) then
 
-      if ( event.type == "Session" ) then
+      handle_session( event )
 
-        handle_session(event)
+    elseif ( event.type == "Player" ) then
 
-      elseif ( event.type == "Player" ) then
+      handle_player( event )
 
-        handle_player(event)
+    elseif ( event.type == "Participant" ) then
 
-      elseif ( event.type == "Participant" ) then
-
-        handle_partipant(event)
-
-      end
+      handle_partipant( event )
 
     end
 
   end
-
 
 end
 

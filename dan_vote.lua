@@ -1,4 +1,4 @@
-function vote_main(...)
+function vote_main(callback, ...)
   -- log("Hello from vote")
 end
 
