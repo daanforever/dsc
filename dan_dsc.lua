@@ -18,6 +18,7 @@ DONE:
 
 local addon_storage = ...
 local config = addon_storage.config
+
 local session_time_duration = 0
 local scheduled_broadcasts = {}
 local scheduled_restart = 0
@@ -46,16 +47,6 @@ end
 
 -- Helper functions -----------------------------------------------------------
 
-local function dump_list( names, list )
-		for _, name in ipairs( names ) do
-			print( "- " .. name .. " = " .. tostring( list[ name ] ) )
-		end
-end
-
-local function starts_with( str, start )
-	return str:sub(1, #start) == start
- end
-
 local function restart_later( delay )
 	scheduled_restart = delay + GetServerUptimeMs();
 end
@@ -69,10 +60,10 @@ local function handle_command_players( event )
 
 end
 
-local function handle_command_restart( message )
+local function handle_command_restart( event )
 
 	local default_restart_time = 60000
-	local restart_time = tonumber(string.match(message, '%d+')) * 1000
+	local restart_time = tonumber(string.match(event.attributes.Message, '%d+')) * 1000
 
 	if restart_time == nil then restart_time = default_restart_time end
 
@@ -113,6 +104,11 @@ local function handle_command_kick( event )
 
 		SendChatToMember(event.refid, "Player with ID " .. refid .. " not found")
 
+	elseif dan.members[ tonumber( refid ) ].is_admin then
+
+		SendChatToMember(event.refid, "Admin can't be kicked")
+		log( dan.members[ event.refid ].name .. " tried to kick another admin " .. dan.members[ tonumber( refid ) ].name )
+
 	else
 
 		refid = tonumber(refid)
@@ -129,9 +125,51 @@ end
 
 local function handle_command_advance( event )
 
-	SendChatToAll(dan.members[event.refid].name .. " changed session")
-	log("Received request to advance session from " .. dan.members[event.refid].name .. " " .. dan.members[event.refid].steamid)
-	AdvanceSession(true)
+	if session.attributes.SessionStage ~= "Race1" then
+
+		SendChatToAll(dan.members[event.refid].name .. " changed session")
+		log("Received request to advance session from " .. dan.members[event.refid].name .. " " .. dan.members[event.refid].steamid)
+		AdvanceSession(true)
+
+	end
+
+end
+
+local function handle_session_attributes_changed()
+
+		if session.attributes["SessionState"] == "Race" and session.attributes["SessionPhase"] == "Green" then
+
+			if session.attributes["SessionTimeElapsed"] >= session.attributes["SessionTimeDuration"] then
+				-- Elapsed >= Duration
+
+				if (session.attributes.SessionStage ~= "Race1") and (scheduled_advance == 0) then
+
+					SendChatToAll("The race is over!")
+					SendChatToAll("30 seconds to cooldown")
+
+					scheduled_advance = 30 * 1000 + GetServerUptimeMs();
+
+				end
+
+			end
+
+		end
+
+end
+
+local function handle_command_race( event )
+
+	local race_duration = tonumber(string.match(event.attributes.Message, '%d+'))
+
+	if (race_duration >= 5) or (race_duration <=60) then
+
+		SendChatToAll( dan.members[event.refid].name .. " changed the race duration to " .. race_duration .. " minutes" )
+		SendChatToAll( "Changes will ONLY take effect in the next lobby (after the next race)" )
+		log("Received a request from " .. dan.members[event.refid].name .. " to change RaceLength to " .. race_duration .. " minutes" )		
+
+		SetNextSessionAttributes( { RaceLength = race_duration } )
+
+	end
 
 end
 
@@ -145,32 +183,16 @@ local function dsc_main( callback, ... )
 		tick()
 		flush()
 
+	-- else
+
+	-- 	dump_callback( callback, ... )
+
 	end
 
   -- Disable overtime
 	if callback == Callback.SessionAttributesChanged then
-		local changed = ...
 
-		-- log("Attributes changed:")
-		-- dump_list(changed, session.attributes)
-
-		if session.attributes["SessionState"] == "Race" and session.attributes["SessionPhase"] == "Green" then
-
-			if session.attributes["SessionTimeElapsed"] >= session.attributes["SessionTimeDuration"] then
-				-- Elapsed >= Duration
-
-				if scheduled_advance == 0 then
-
-					SendChatToAll("The race is over!")
-					SendChatToAll("30 seconds to cooldown")
-
-					scheduled_advance = 30 * 1000 + GetServerUptimeMs();
-
-				end
-
-			end
-
-		end
+		handle_session_attributes_changed()
 
 	end
 
@@ -220,7 +242,7 @@ local function dsc_main( callback, ... )
 
 					if starts_with(message, "/restart") then
 
-						handle_command_restart( message )
+						handle_command_restart( event )
 
 					elseif message == "/advance" or message == "/next" then
 
@@ -245,6 +267,10 @@ local function dsc_main( callback, ... )
 
 	  				handle_command_players( event )
 
+					elseif starts_with(message, "/race") then
+
+						handle_command_race( event )
+
 	  			elseif starts_with(message, "/kick") then
 
 	  				handle_command_kick( event )
@@ -265,7 +291,8 @@ local function dsc_main( callback, ... )
 	end -- callback == Callback.EventLogged
 
 
-	pb_main(callback, ...)
+	-- pb_main( callback, ... )
+	invoke_modules( ... )
 end -- function dsc_main
 
 -- Main
@@ -292,3 +319,13 @@ EnableCallback( Callback.SessionAttributesChanged )
 print("DSC activated")
 
 -- EOF --
+
+-- callback: EventLogged
+-- string time: number 1738417289
+-- string attributes:
+--   string PreviousStage: string Practice1
+--   string NewStage: string Race1
+--   string Length: number 10
+-- string name: string StageChanged
+-- string index: number 30
+-- string type: string Session

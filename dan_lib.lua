@@ -3,6 +3,7 @@ local config = addon_storage.config
 local addon_data = addon_storage.data
 
 if not dan then dan = {} end
+if not dan.modules then dan.modules = {} end
 if not dan.members then dan.members = {} end
 if not dan.scheduled_broadcasts then dan.scheduled_broadcasts = {} end
 if not dan.scheduled_messages then dan.scheduled_messages = {} end
@@ -24,6 +25,18 @@ function log( text )
 
 end
 
+function register_module( callback )
+  table.insert(dan.modules, callback)
+end
+
+function invoke_modules( ... )
+
+  for _, f in ipairs(dan.modules) do
+    f(...)
+  end
+
+end
+
 function member_add( event )
 
   local refid = event.refid
@@ -36,13 +49,14 @@ function member_add( event )
   dan.members[refid].is_admin = is_admin(dan.members[refid].steamid)
 
   if dan.members[refid].is_admin then
-    send_later(2100, refid, {
+    send_later(3000, refid, {
       "Admin privileges granted",
       "Available commands:",
-      "/players - get list in format: ID Name",
+      "/next - restart practice or transition from practice to racing",
       "/kick ID reason - kick player by ID (from /players)",
       "Example: /kick 123 Rammed and blocked the road",
-      "/next - restart practice or transition from practice to racing"
+      "/players - get list in format: ID Name",
+      "/race N - change the race duration to N minutes (min 5, max 60)"
     })
     log("Joined admin " .. dan.members[refid].name)
   else
@@ -159,3 +173,37 @@ function flush_messages(now)
   end
   
 end
+
+function dump_list( names, list )
+    for _, name in ipairs( names ) do
+      print( "- " .. name .. " = " .. tostring( list[ name ] ) )
+    end
+end
+
+function dump_callback(callback, ...)
+  
+  log( "Callback: " .. value_to_callback[callback] )
+
+  local args = {...}
+
+  for __, arg in ipairs(args) do
+
+    if type( arg ) == "table" then
+      dump_typed( arg )
+    else
+      print("Scalar: " .. arg)
+    end
+
+  end
+
+  log( "session.attributes:")
+  log( "  SessionStage: " .. session.attributes.SessionStage )
+  log( "  SessionPhase: " .. session.attributes.SessionPhase )
+  log( "  SessionState: " .. session.attributes.SessionState )
+
+end
+
+function starts_with( str, start )
+  return str:sub(1, #start) == start
+end
+

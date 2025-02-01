@@ -146,17 +146,21 @@ function pb_main( callback, ... )
 
     local event = ...
 
-    if ( event.type == "Session" ) then
+    if type( event ) == "table" then
 
-      handle_session(event)
+      if ( event.type == "Session" ) then
 
-    elseif ( event.type == "Player" ) then
+        handle_session(event)
 
-      handle_player(event)
+      elseif ( event.type == "Player" ) then
 
-    elseif ( event.type == "Participant" ) then
+        handle_player(event)
 
-      handle_partipant(event)
+      elseif ( event.type == "Participant" ) then
+
+        handle_partipant(event)
+
+      end
 
     end
 
@@ -170,6 +174,8 @@ end
 -- EnableCallback( Callback.EventLogged )
 EnableCallback( Callback.ParticipantCreated )
 EnableCallback( Callback.ParticipantRemoved )
+
+register_module(pb_main)
 
 -- string name: string SessionCreated
 -- string type: string Session
