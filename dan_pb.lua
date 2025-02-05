@@ -31,12 +31,57 @@ local function handle_player_left( event )
   -- member_del( event )
 end
 
+local function handle_player_chat( event )
+  
+  if event.attributes.Message == "/pb" then
+
+    local member = dan.members[event.refid]
+    local track_id = session.attributes.TrackId
+    local vehicle_id = session.members[event.refid].attributes.VehicleId
+
+    -- dump_typed(dan.data.records)
+    -- print("member.steamid:" .. type(member.steamid) .. " = " .. member.steamid)
+    -- print("track_id:" .. type(track_id) .. " = " .. track_id)
+    -- print("vehicle_id:" .. type(vehicle_id) .. " = " .. vehicle_id)
+
+    if (dan.data.records[member.steamid]) and 
+       (dan.data.records[member.steamid][track_id]) and 
+       (dan.data.records[member.steamid][track_id][vehicle_id]) and
+       (dan.data.records[member.steamid][track_id][vehicle_id].LapTime > 0)
+    then
+
+      local lap_time = dan.data.records[member.steamid][track_id][vehicle_id].LapTime
+      -- SendChatToMember( event.refid, "PB: " .. ms_to_human( lap_time ) )
+
+      local lap_time_human = ms_to_human( lap_time )
+      local vehicle_name = get_vehicle_name_by_id( vehicle_id )
+      local message = "PB: " .. lap_time_human .. " " .. member.name .. " (" .. vehicle_name .. ")"
+      SendChatToAll( message )
+
+    else
+
+      SendChatToMember( event.refid, "PB: no records" )
+
+    end
+
+  end
+
+end
+
 local function handle_player( event )
 
   if ( event.name == "PlayerJoined" ) then
-    handle_player_joined(event)
+
+    handle_player_joined( event )
+
   elseif ( event.name == "PlayerLeft" ) then
-    handle_player_left(event)
+
+    handle_player_left( event )
+
+  elseif event.name == "PlayerChat" then
+
+    handle_player_chat( event )
+
   end
 
 end
@@ -85,13 +130,7 @@ local function handle_valid_lap( event )
 
     SavePersistentData()
 
-    local ins = math.floor( lap_time / 1000 )
-    local min = math.floor( ins / 60 )
-    local sec = math.floor( ins - min * 60 )
-    local ms  = math.floor( lap_time - (min * 60000) - (sec * 1000) )
-
-    local lap_time_human = string.format("%02d:%02d.%03d", min, sec, ms)
-
+    local lap_time_human = ms_to_human( lap_time )
     local vehicle_name = get_vehicle_name_by_id( vehicle_id )
     local message = "PB: " .. lap_time_human .. " " .. member.name .. " (" .. vehicle_name .. ")"
 

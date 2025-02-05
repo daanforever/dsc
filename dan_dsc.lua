@@ -127,7 +127,7 @@ local function handle_command_advance( event )
 
 	if session.attributes.SessionStage ~= "Race1" then
 
-		SendChatToAll(dan.members[event.refid].name .. " changed session")
+		SendChatToAll(dan.members[event.refid].name .. " changed the session")
 		log("Received request to advance session from " .. dan.members[event.refid].name .. " " .. dan.members[event.refid].steamid)
 		AdvanceSession(true)
 
@@ -137,7 +137,7 @@ end
 
 local function handle_session_attributes_changed()
 
-		if session.attributes["SessionState"] == "Race" and session.attributes["SessionPhase"] == "Green" then
+		if (session.attributes.SessionState == "Race") and (session.attributes.SessionPhase) == "Green" then
 
 			if session.attributes["SessionTimeElapsed"] >= session.attributes["SessionTimeDuration"] then
 				-- Elapsed >= Duration

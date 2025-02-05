@@ -10,11 +10,46 @@ if not dan.scheduled_messages then dan.scheduled_messages = {} end
 if not config.admins then config.admins = {} end
 
 dan.data = addon_storage.data
-local intkey_table_names = { records = true }
-dan.data = table.deep_copy_normalized( dan.data, intkey_table_names )
+if not dan.data then dan.data = {} end
+
+local function normalize_storage( original )
+  
+  local result = {}
+
+  if type( original ) ~= "table" then
+
+    if k == tostring( tonumber( original ) ) then
+      result = tonumber( original )
+    else
+      result = original
+    end
+
+  else
+
+    for k, v in pairs( original ) do
+
+      if k == tostring( tonumber( k ) ) then
+        result[ tonumber(k) ] = normalize_storage( v )
+      else
+        result[ k ] = normalize_storage( v )
+      end
+
+    end
+
+  end
+
+  return result
+
+end
+
+print("DUMP1")
+dump_typed(dan.data)
+
+dan.data = normalize_storage( dan.data )
 addon_storage.data = dan.data
 
-if not dan.data then dan.data = {} end
+print("DUMP2")
+dump_typed(dan.data)
 
 function log( text )
 
@@ -45,22 +80,33 @@ function member_add( event )
 
   dan.members[refid] = {}
   dan.members[refid].name = event.attributes.Name
-  dan.members[refid].steamid = tostring(event.attributes.SteamId)
+  dan.members[refid].steamid = tonumber(event.attributes.SteamId)
   dan.members[refid].is_admin = is_admin(dan.members[refid].steamid)
 
   if dan.members[refid].is_admin then
+
     send_later(3000, refid, {
       "Admin privileges granted",
       "Available commands:",
+      "/pb - show your Personal Best time",
       "/next - restart practice or transition from practice to racing",
       "/kick ID reason - kick player by ID (from /players)",
       "Example: /kick 123 Rammed and blocked the road",
       "/players - get list in format: ID Name",
       "/race N - change the race duration to N minutes (min 5, max 60)"
     })
+
     log("Joined admin " .. dan.members[refid].name)
+
   else
+
+    send_later(3000, refid, {
+      "Available commands:",
+      "/pb - show your Personal Best time"
+    })
+
     log("Joined user " .. dan.members[refid].name)
+
   end
 
 end
@@ -73,8 +119,8 @@ function is_admin( steamid )
 
   local result = false
 
-  for i,v in pairs(config.admins) do
-    if v == steamid then result = true end
+  for _,v in pairs(config.admins) do
+    if tonumber(v) == steamid then result = true end
   end
 
   return result
@@ -207,3 +253,13 @@ function starts_with( str, start )
   return str:sub(1, #start) == start
 end
 
+function ms_to_human( lap_time )
+    lap_time = tonumber( lap_time )
+
+    local ins = math.floor( lap_time / 1000 )
+    local min = math.floor( ins / 60 )
+    local sec = math.floor( ins - min * 60 )
+    local ms  = math.floor( lap_time - (min * 60000) - (sec * 1000) )
+
+    return string.format("%02d:%02d.%03d", min, sec, ms)
+end
