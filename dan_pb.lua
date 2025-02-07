@@ -31,38 +31,71 @@ local function handle_player_left( event )
   -- member_del( event )
 end
 
+local function handle_command_pb( event )
+
+  local member = dan.members[event.refid]
+  local track_id = session.attributes.TrackId
+  local vehicle_id = session.members[event.refid].attributes.VehicleId
+
+  -- dump_typed(dan.data.records)
+  -- print("member.steamid:" .. type(member.steamid) .. " = " .. member.steamid)
+  -- print("track_id:" .. type(track_id) .. " = " .. track_id)
+  -- print("vehicle_id:" .. type(vehicle_id) .. " = " .. vehicle_id)
+
+  if (dan.data.records[member.steamid]) and 
+     (dan.data.records[member.steamid][track_id]) and 
+     (dan.data.records[member.steamid][track_id][vehicle_id]) and
+     (dan.data.records[member.steamid][track_id][vehicle_id].LapTime ~= nil)
+
+  then
+
+    local lap_time = dan.data.records[member.steamid][track_id][vehicle_id].LapTime
+    -- SendChatToMember( event.refid, "PB: " .. ms_to_human( lap_time ) )
+
+    local lap_time_human = ms_to_human( lap_time )
+    local vehicle_name = get_vehicle_name_by_id( vehicle_id )
+    local message = "PB: " .. lap_time_human .. " " .. member.name .. " (" .. vehicle_name .. ")"
+    SendChatToAll( message )
+
+  else
+
+    SendChatToMember( event.refid, "PB: no records" )
+
+  end
+
+end
+
+local function handle_command_pb_reset( event )
+
+  local member = dan.members[event.refid]
+  local track_id = session.attributes.TrackId
+  local vehicle_id = session.members[event.refid].attributes.VehicleId
+
+  if (dan.data.records[member.steamid]) and
+     (dan.data.records[member.steamid][track_id]) and
+     (dan.data.records[member.steamid][track_id][vehicle_id]) and
+     (dan.data.records[member.steamid][track_id][vehicle_id].LapTime)
+  then
+
+    dan.data.records[member.steamid][track_id][vehicle_id].LapTime = nil
+    SavePersistentData()
+    SendChatToMember( event.refid, "PB has been removed" )
+
+  end
+
+end
+
 local function handle_player_chat( event )
   
-  if event.attributes.Message == "/pb" then
+  local message = event.attributes.Message
 
-    local member = dan.members[event.refid]
-    local track_id = session.attributes.TrackId
-    local vehicle_id = session.members[event.refid].attributes.VehicleId
+  if message == "/pb" then
 
-    -- dump_typed(dan.data.records)
-    -- print("member.steamid:" .. type(member.steamid) .. " = " .. member.steamid)
-    -- print("track_id:" .. type(track_id) .. " = " .. track_id)
-    -- print("vehicle_id:" .. type(vehicle_id) .. " = " .. vehicle_id)
+    handle_command_pb( event )
 
-    if (dan.data.records[member.steamid]) and 
-       (dan.data.records[member.steamid][track_id]) and 
-       (dan.data.records[member.steamid][track_id][vehicle_id]) and
-       (dan.data.records[member.steamid][track_id][vehicle_id].LapTime > 0)
-    then
+  elseif message == "/pb reset" then
 
-      local lap_time = dan.data.records[member.steamid][track_id][vehicle_id].LapTime
-      -- SendChatToMember( event.refid, "PB: " .. ms_to_human( lap_time ) )
-
-      local lap_time_human = ms_to_human( lap_time )
-      local vehicle_name = get_vehicle_name_by_id( vehicle_id )
-      local message = "PB: " .. lap_time_human .. " " .. member.name .. " (" .. vehicle_name .. ")"
-      SendChatToAll( message )
-
-    else
-
-      SendChatToMember( event.refid, "PB: no records" )
-
-    end
+    handle_command_pb_reset( event )
 
   end
 
@@ -122,7 +155,9 @@ local function handle_valid_lap( event )
   if not record[track_id] then record[track_id] = {} end
   if not record[track_id][vehicle_id] then record[track_id][vehicle_id] = {} end
 
-  if (not record[track_id][vehicle_id].LapTime) or (record[track_id][vehicle_id].LapTime > lap_time) then
+  if ( not record[track_id][vehicle_id].LapTime ) or
+     ( record[track_id][vehicle_id].LapTime > lap_time )
+  then
 
     record[track_id][vehicle_id].LapTime = lap_time
     record[track_id][vehicle_id].Name = member.name
@@ -145,7 +180,12 @@ local function handle_partipant_lap( event )
 
   dump_typed(event)
 
-  if (event.attributes.CountThisLapTimes == 1) and (dan.members[event.refid].counting) then
+  if (event.attributes.CountThisLapTimes == 1) and 
+    (event.attributes.Sector1Time > 0) and 
+    (event.attributes.Sector2Time > 0) and 
+    (event.attributes.Sector3Time > 0) and 
+    (dan.members[event.refid].counting)
+  then
     handle_valid_lap(event)
   else
     dan.members[event.refid].counting = true

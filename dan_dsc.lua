@@ -142,7 +142,7 @@ local function handle_session_attributes_changed()
 			if session.attributes["SessionTimeElapsed"] >= session.attributes["SessionTimeDuration"] then
 				-- Elapsed >= Duration
 
-				if (session.attributes.SessionStage ~= "Race1") and (scheduled_advance == 0) then
+				if (session.attributes.SessionStage == "Practice1") and (scheduled_advance == 0) then
 
 					SendChatToAll("The race is over!")
 					SendChatToAll("30 seconds to cooldown")
@@ -157,17 +157,168 @@ local function handle_session_attributes_changed()
 
 end
 
+local function handle_command_practice( event )
+
+	local duration = tonumber(string.match(event.attributes.Message, '%d+'))
+
+	if ( duration >= 5 ) or ( duration <= 90 ) then
+
+		SendChatToAll( dan.members[event.refid].name .. " changed the practice duration to " .. duration .. " minutes" )
+		SendChatToAll( "Changes will ONLY take effect in the next lobby" )
+		log("Received a request from " .. dan.members[event.refid].name .. " to change PracticeLength to " .. duration .. " minutes" )		
+
+		SetNextSessionAttributes( { PracticeLength = duration } )
+
+	end
+
+end
+
+local function handle_command_qualify( event )
+
+	local duration = tonumber(string.match(event.attributes.Message, '%d+'))
+
+	if ( duration >= 5 ) or ( duration <= 90 ) then
+
+		SendChatToAll( dan.members[event.refid].name .. " changed the qualify duration to " .. duration .. " minutes" )
+		SendChatToAll( "Changes will ONLY take effect in the next lobby" )
+		log("Received a request from " .. dan.members[event.refid].name .. " to change QualifyLength to " .. duration .. " minutes" )		
+
+		SetNextSessionAttributes( { QualifyLength = duration } )
+
+	end
+
+end
+
+
 local function handle_command_race( event )
 
-	local race_duration = tonumber(string.match(event.attributes.Message, '%d+'))
+	local duration = tonumber(string.match(event.attributes.Message, '%d+'))
 
-	if (race_duration >= 5) or (race_duration <=60) then
+	if ( duration >= 5 ) or ( duration <= 60 ) then
 
-		SendChatToAll( dan.members[event.refid].name .. " changed the race duration to " .. race_duration .. " minutes" )
+		SendChatToAll( dan.members[event.refid].name .. " changed the race duration to " .. duration .. " minutes" )
 		SendChatToAll( "Changes will ONLY take effect in the next lobby (after the next race)" )
-		log("Received a request from " .. dan.members[event.refid].name .. " to change RaceLength to " .. race_duration .. " minutes" )		
+		log("Received a request from " .. dan.members[event.refid].name .. " to change RaceLength to " .. duration .. " minutes" )		
 
-		SetNextSessionAttributes( { RaceLength = race_duration } )
+		SetNextSessionAttributes( { RaceLength = duration } )
+
+	end
+
+end
+
+local function handle_admin_command( event )
+
+	local message = event.attributes.Message
+
+	if message == "/help" then
+
+		if dan.members[event.refid].is_admin then
+
+			show_admin_commands( event.refid )
+
+		end
+
+		show_user_commands( event.refid )
+
+	elseif starts_with(message, "/restart") then
+
+		handle_command_restart( event )
+
+	elseif message == "/advance" or message == "/next" then
+
+		handle_command_advance( event )
+
+	elseif message == "/stop" then
+
+		log("Received request to stop session from " .. dan.members[event.refid].name .. " " .. dan.members[event.refid].steamid)
+		StopSession()
+
+	elseif starts_with(message, "/maxplayers") then
+
+		local maxplayers = tonumber(string.match(message, '/maxplayers%s*(%d+)'))
+		SendChatToMember( event.refid, "MaxPlayers=" .. maxplayers .. " effective next Lobby.")
+
+		local attributes = { MaxPlayers = maxplayers }
+		log("Received request to change MaxPlayers to " .. maxplayers)		
+
+		SetNextSessionAttributes( attributes )
+
+	elseif message == "/players" then
+
+		handle_command_players( event )
+
+	elseif starts_with(message, "/practice") then
+
+		handle_command_practice( event )
+
+	elseif starts_with(message, "/qualify") then
+
+		handle_command_qualify( event )
+
+	elseif starts_with(message, "/race") then
+
+		handle_command_race( event )
+
+	elseif starts_with(message, "/kick") then
+
+		handle_command_kick( event )
+
+	end
+
+end
+
+local function handle_command_player_chat( event )
+
+	local message = event.attributes.Message
+
+	-- Handle admin commands
+	if dan.members[event.refid].is_admin then
+
+		handle_admin_command( event )
+
+	else -- user is not an admin
+
+		log("CHAT [" .. dan.members[event.refid].name .. "] " .. message)
+
+	end -- dan.members[event.refid].is_admin
+
+end
+
+local function handle_event_player( event )
+
+	-- PlayerJoined
+	if event.name == "PlayerJoined" then
+
+		member_add( event )
+
+	end
+
+	-- PlayerLeft
+	if event.name == "PlayerLeft" then
+
+		member_del( event )
+
+	end
+
+	if event.name == "PlayerChat" then
+
+		handle_command_player_chat( event )
+
+	end -- event.name == "PlayerChat"
+
+end
+
+local function handle_participant_created( event )
+
+	SendChatToMember( event.refid, "Type /help in chat to get a list of available commands")
+
+end
+
+local function handle_event_participant( event )
+
+	if event.name == "ParticipantCreated" then
+
+		handle_participant_created( event )
 
 	end
 
@@ -197,14 +348,17 @@ local function dsc_main( callback, ... )
 	end
 
 	if callback == Callback.NextSessionAttributesChanged then
+
 		local changed = ...
 
 		log("NextAttributes changed:")
 		dump_list(changed, session.next_attributes)
+
 	end
 
 	-- Handle event
 	if callback == Callback.EventLogged then
+
 		local event = ...
 
 		log("Dump callback: " .. value_to_callback[ callback ])
@@ -212,7 +366,9 @@ local function dsc_main( callback, ... )
 
 		if ( event.type == "Session" ) and ( event.name == "StateChanged" ) then
 			if ( event.attributes.NewState == "Loading" ) then
+
 				SavePersistentData()
+
 			end
 		end
 
@@ -220,79 +376,24 @@ local function dsc_main( callback, ... )
 			dan.members = {}
 		end
 
-		-- Handle event.type Player
 		if event.type == "Player" then
 
-			-- PlayerJoined
-			if event.name == "PlayerJoined" then
-				member_add( event )
-			end
+			handle_event_player( event )
 
-			-- PlayerLeft
-			if event.name == "PlayerLeft" then
-				member_del( event )
-			end
+		end
 
-			if event.name == "PlayerChat" then
+		if event.type == "Participant" then
 
-  			local message = event.attributes.Message
+			handle_event_participant( event )
 
-				-- Handle admin commands
-				if dan.members[event.refid].is_admin then
-
-					if starts_with(message, "/restart") then
-
-						handle_command_restart( event )
-
-					elseif message == "/advance" or message == "/next" then
-
-						handle_command_advance( event )
-
-					elseif message == "/stop" then
-
-						log("Received request to stop session from " .. dan.members[event.refid].name .. " " .. dan.members[event.refid].steamid)
-						StopSession()
-
-					elseif starts_with(message, "/maxplayers") then
-
-						local maxplayers = tonumber(string.match(message, '/maxplayers%s*(%d+)'))
-						SendChatToMember( event.refid, "MaxPlayers=" .. maxplayers .. " effective next Lobby.")
-
-						local attributes = { MaxPlayers = maxplayers }
-						log("Received request to change MaxPlayers to " .. maxplayers)		
-
-						SetNextSessionAttributes( attributes )
-
-	  			elseif message == "/players" then
-
-	  				handle_command_players( event )
-
-					elseif starts_with(message, "/race") then
-
-						handle_command_race( event )
-
-	  			elseif starts_with(message, "/kick") then
-
-	  				handle_command_kick( event )
-
-	  			end
-
-
-				else -- user is not an admin
-
-					log("CHAT [" .. dan.members[event.refid].name .. "] " .. message)
-
-				end -- dan.members[event.refid].is_admin
-
-			end -- event.name == "PlayerChat"
-
-		end -- event.type == "Player"
+		end
 
 	end -- callback == Callback.EventLogged
 
 
 	-- pb_main( callback, ... )
 	invoke_modules( callback, ... )
+
 end -- function dsc_main
 
 -- Main

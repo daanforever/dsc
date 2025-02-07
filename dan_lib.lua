@@ -42,14 +42,8 @@ local function normalize_storage( original )
 
 end
 
-print("DUMP1")
-dump_typed(dan.data)
-
 dan.data = normalize_storage( dan.data )
 addon_storage.data = dan.data
-
-print("DUMP2")
-dump_typed(dan.data)
 
 function log( text )
 
@@ -72,6 +66,43 @@ function invoke_modules( ... )
 
 end
 
+function show_admin_commands( refid, delay )
+
+  delay = delay or 0
+
+  send_later(delay, refid, {
+
+    "Admin commands:",
+    " /drs disable - disable Dynamic Race System",
+    " /drs enable - enable Dynamic Race System",
+    " /drs or /drs status - status of Dynamic Race System",
+    " /kick ID reason - kick player by ID (from /players)",
+    " /next - restart practice or transition practice > qualify > racing",
+    " /players - get list in format: ID Name",
+    " /practice N - change the practice duration to N minutes (min 5, max 60)",
+    " /qualify N - change the qualification duration to N minutes (min 5, max 60)",
+    " /race N - change the race duration to N minutes (min 5, max 60)",
+
+  })
+
+
+end
+
+function show_user_commands( refid, delay )
+
+  delay = delay or 0
+
+  send_later(delay, refid, {
+
+    "Commands:",
+    " /help - shows available commands",
+    " /pb - shows your Personal Best time",
+    " /pb reset - resets your Personal Best time"
+
+  })
+  
+end
+
 function member_add( event )
 
   local refid = event.refid
@@ -85,29 +116,13 @@ function member_add( event )
 
   if dan.members[refid].is_admin then
 
-    send_later(3000, refid, {
-      "Admin privileges granted",
-      "Available commands:",
-      "/pb - show your Personal Best time",
-      "/next - restart practice or transition from practice to racing",
-      "/kick ID reason - kick player by ID (from /players)",
-      "Example: /kick 123 Rammed and blocked the road",
-      "/players - get list in format: ID Name",
-      "/race N - change the race duration to N minutes (min 5, max 60)"
-    })
+    show_admin_commands( refid, 3000 )
 
     log("Joined admin " .. dan.members[refid].name)
 
-  else
-
-    send_later(3000, refid, {
-      "Available commands:",
-      "/pb - show your Personal Best time"
-    })
-
-    log("Joined user " .. dan.members[refid].name)
-
   end
+
+  show_user_commands( refid, 3000 )
 
 end
 
@@ -149,7 +164,7 @@ end
 -- delay in seconds
 function send_later(delay, refid, messages)
 
-  -- log("send_later: " .. delay .. " " .. refid .. " " .. message)
+  log("send_later: " .. delay .. " " .. refid .. " " .. #messages)
 
   local send_time = delay + GetServerUptimeMs();
 
