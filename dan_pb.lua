@@ -2,8 +2,6 @@ print( "Callbacks:" ); dump( Callback, "  " )
 
 print("Dan PB activated")
 
-local addon_storage = ...
-
 local function hander_session_created( event )
   dan.members = {}
 end

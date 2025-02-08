@@ -4,7 +4,14 @@ version : 1
 // Default configuration
 config : {
   "admins" : ["76561197979302088"],
+
   "welcome" : [
+    "Welcome to 'ACR | Nordschleife | Green Hell'",
+    "Telegram: https://t.me/nordschleife_green_hell",
+    " ",
+  ],
+
+  "rules" : [
     "Server rules:",
     "* WE let faster cars pass.",
     "* WE use the 'Virtual Mirror' to avoid ruining a faster car's laptime.",

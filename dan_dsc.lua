@@ -70,18 +70,18 @@ local function handle_command_restart( event )
 		dan.members[event.refid].steamid .. " in " .. restart_time .. " seconds"
 	)
 
-	broadcast_later(0, {"The server will restart in " .. math.floor(restart_time / 1000) .. " seconds."})
+	broadcast_message({"The server will restart in " .. math.floor(restart_time / 1000) .. " seconds."})
 
 	if restart_time > 60000 then
-		broadcast_later(restart_time - 60000, {"The server will restart in 60 seconds."})
+		broadcast_message({"The server will restart in 60 seconds."}, restart_time - 60000)
 	end
 	
 	if restart_time > 30000 then
-		broadcast_later(restart_time - 30000, {"The server will restart in 30 seconds."})
+		broadcast_message({"The server will restart in 30 seconds."}, restart_time - 30000)
 	end
 
 	if restart_time > 10000 then
-		broadcast_later(restart_time - 10000, {"The server will restart in 10 seconds."})
+		broadcast_message({"The server will restart in 10 seconds."}, restart_time - 10000)
 	end
 
 	restart_later(restart_time)
@@ -112,7 +112,7 @@ local function handle_command_kick( event )
 		message = "Kicked " .. dan.members[refid].name .. " by " .. 
 		           dan.members[event.refid].name .. " \"" .. reason .. "\""
 		
-		SendChatToAll()
+		SendChatToAll( message )
 		KickMember( refid )
 		log( message )
 
@@ -203,6 +203,12 @@ local function handle_command_race( event )
 
 end
 
+local function handle_command_rules( event )
+
+		broadcast_message( dan.config.rules )
+
+end
+
 local function handle_admin_command( event )
 
 	local message = event.attributes.Message
@@ -224,6 +230,10 @@ local function handle_admin_command( event )
 	elseif message == "/advance" or message == "/next" then
 
 		handle_command_advance( event )
+
+	elseif starts_with(message, "/kick") then
+
+		handle_command_kick( event )
 
 	elseif message == "/stop" then
 
@@ -256,9 +266,9 @@ local function handle_admin_command( event )
 
 		handle_command_race( event )
 
-	elseif starts_with(message, "/kick") then
+	elseif message == "/rules" then
 
-		handle_command_kick( event )
+		handle_command_rules( event )
 
 	end
 
@@ -287,10 +297,17 @@ local function show_welcome( refid )
 
 end
 
+local function show_rules( refid )
+
+	send_later( 3000, refid, dan.config.rules )
+
+end
+
 local function handle_player_joined( event )
 
 	member_add( event )
   show_welcome( event.refid )
+  show_rules( event.refid )
 
 	if dan.members[ event.refid ].is_admin then
 

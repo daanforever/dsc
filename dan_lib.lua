@@ -11,6 +11,7 @@ if not dan.scheduled_messages then dan.scheduled_messages = {} end
 dan.config = addon_storage.config
 if not dan.config.admins then dan.config.admins = {} end
 if not dan.config.welcome then dan.config.welcome = {} end
+if not dan.config.rules then dan.config.rules = {} end
 
 dan.data = addon_storage.data
 if not dan.data then dan.data = {} end
@@ -84,18 +85,18 @@ function show_admin_commands( refid, delay )
   send_later(delay, refid, {
 
     "Admin commands:",
-    " /drs disable - disable Dynamic Race System",
-    " /drs enable - enable Dynamic Race System",
-    " /drs or /drs status - status of Dynamic Race System",
+    -- " /drs disable - disable Dynamic Race System",
+    -- " /drs enable - enable Dynamic Race System",
+    -- " /drs or /drs status - status of Dynamic Race System",
     " /kick ID reason - kick player by ID (from /players)",
     " /next - restart practice or transition practice > qualify > racing",
     " /players - get list in format: ID Name",
     " /practice N - change the practice duration to N minutes (min 5, max 60)",
     " /qualify N - change the qualification duration to N minutes (min 5, max 60)",
     " /race N - change the race duration to N minutes (min 5, max 60)",
+    " /rules - repeat the rules to everyone"
 
   })
-
 
 end
 
@@ -143,18 +144,23 @@ function is_admin( steamid )
 
 end
 
--- Usage: broadcast_later(1, ["Hello"])
--- delay in seconds
-function broadcast_later(delay, messages)
+-- Usage: broadcast_message(["Hello"], 1000)
+-- delay in milliseconds
+function broadcast_message(messages, delay)
+
+  delay = delay or 0
 
   local send_time = delay + GetServerUptimeMs();
 
   if dan.scheduled_broadcasts[send_time] == nil then
     dan.scheduled_broadcasts[send_time] = messages
+
   else
 
     for _, message in ipairs(messages) do
+
       table.insert(dan.scheduled_broadcasts[send_time], message)
+
     end
 
   end
