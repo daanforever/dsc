@@ -2,25 +2,38 @@
 
 local drs_enabled = true
 local race_mode = false
-local max = 15
+local race_length = 10
+local max = 10
 local min = 5
 
-local race_length = 10
 
 local function handle_player_joined( event )
 
-  if (drs_enabled) and (not race_mode) and (#dan.members >= max) then
+  DEBUG("[DRS] handle_player_joined entered")
+  DEBUG("drs_enabled=" .. tostring(drs_enabled) .. " race_mode=" .. tostring(race_mode) .. " #dan.members=" .. table.size(dan.members))
+
+  if (drs_enabled) and (not race_mode) and (table.size(dan.members) >= max) and
+     (session.next_attributes.RaceLength == 0)
+  then
+
+    DEBUG("[DRS] handle_player_joined enable race_mode")
 
     race_mode = true
 
-    if session.next_attributes.RaceLength == 0 then
-
+    if (session.attributes.RaceLength == 0) then
       SetSessionAttributes( { RaceLength = race_length } )
+    end
+
+
+    if (session.next_attributes.RaceLength == 0) then
       SetNextSessionAttributes( { RaceLength = race_length } )
-      
     end
 
     SendChatToAll("[DynamicRace] Reached " .. max .. " players. Enable the race (next lobby)")
+
+  else
+
+    DEBUG("[DRS] handle_player_joined not all conditions are met")
 
   end
 
@@ -28,18 +41,29 @@ end
 
 local function handle_player_left( event )
 
-  if (drs_enabled) and (race_mode) and (#dan.members < min) then
+  DEBUG("[DRS] handle_player_left entered")
+  DEBUG("drs_enabled=" .. tostring(drs_enabled) .. " race_mode=" .. tostring(race_mode) .. " #dan.members=" .. table.size(dan.members))
+
+  if (drs_enabled) and (race_mode) and (table.size(dan.members) < min) then
+
+    DEBUG("[DRS] handle_player_left disable race_mode")
 
     race_mode = false
 
-    if session.next_attributes.RaceLength ~= 0 then
-
+    if (session.attributes.RaceLength ~= 0) then
       SetSessionAttributes( { RaceLength = 0 } )
+    end
+
+
+    if (session.next_attributes.RaceLength ~= 0) then
       SetNextSessionAttributes( { RaceLength = 0 } )
-      
     end
 
     SendChatToAll("[DynamicRace] Less than " .. min .. " players. Disable the race (next lobby)")
+
+  else
+
+    DEBUG("[DRS] handle_player_left not all conditions are met")
 
   end
 

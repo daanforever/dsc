@@ -1,13 +1,16 @@
+local debug_mode = true
+
 local addon_storage = ...
-local config = addon_storage.config
-local addon_data = addon_storage.data
 
 if not dan then dan = {} end
 if not dan.modules then dan.modules = {} end
 if not dan.members then dan.members = {} end
 if not dan.scheduled_broadcasts then dan.scheduled_broadcasts = {} end
 if not dan.scheduled_messages then dan.scheduled_messages = {} end
-if not config.admins then config.admins = {} end
+
+dan.config = addon_storage.config
+if not dan.config.admins then dan.config.admins = {} end
+if not dan.config.welcome then dan.config.welcome = {} end
 
 dan.data = addon_storage.data
 if not dan.data then dan.data = {} end
@@ -44,6 +47,14 @@ end
 
 dan.data = normalize_storage( dan.data )
 addon_storage.data = dan.data
+
+function DEBUG( text )
+
+  if debug_mode then
+    log( text )
+  end
+
+end
 
 function log( text )
 
@@ -114,16 +125,6 @@ function member_add( event )
   dan.members[refid].steamid = tonumber(event.attributes.SteamId)
   dan.members[refid].is_admin = is_admin(dan.members[refid].steamid)
 
-  if dan.members[refid].is_admin then
-
-    show_admin_commands( refid, 3000 )
-
-    log("Joined admin " .. dan.members[refid].name)
-
-  end
-
-  show_user_commands( refid, 3000 )
-
 end
 
 function member_del( event )
@@ -134,7 +135,7 @@ function is_admin( steamid )
 
   local result = false
 
-  for _,v in pairs(config.admins) do
+  for _,v in pairs(dan.config.admins) do
     if tonumber(v) == steamid then result = true end
   end
 
@@ -160,7 +161,7 @@ function broadcast_later(delay, messages)
 
 end
 
--- Usage: send_later(1, { 1001 : {"Hello", "World"} })
+-- Usage: send_later(1, 1001, {"Hello", "World"})
 -- delay in seconds
 function send_later(delay, refid, messages)
 
@@ -277,4 +278,16 @@ function ms_to_human( lap_time )
     local ms  = math.floor( lap_time - (min * 60000) - (sec * 1000) )
 
     return string.format("%02d:%02d.%03d", min, sec, ms)
+end
+
+function table.size( tbl )
+  local size = 0
+
+  for n in pairs(tbl) do 
+
+    size = size + 1 
+    
+  end
+
+  return size
 end

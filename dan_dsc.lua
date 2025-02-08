@@ -16,9 +16,6 @@ DONE:
 
 --]]
 
-local addon_storage = ...
-local config = addon_storage.config
-
 local session_time_duration = 0
 local scheduled_broadcasts = {}
 local scheduled_restart = 0
@@ -284,12 +281,35 @@ local function handle_command_player_chat( event )
 
 end
 
+local function show_welcome( refid )
+
+	send_later( 3000, refid, dan.config.welcome )
+
+end
+
+local function handle_player_joined( event )
+
+	member_add( event )
+  show_welcome( event.refid )
+
+	if dan.members[ event.refid ].is_admin then
+
+    show_admin_commands( event.refid, 3000 )
+
+    log("Joined admin " .. dan.members[ event.refid ].name)
+
+  end
+
+  show_user_commands( event.refid, 3000 )
+
+end
+
 local function handle_event_player( event )
 
 	-- PlayerJoined
 	if event.name == "PlayerJoined" then
 
-		member_add( event )
+		handle_player_joined( event )
 
 	end
 
