@@ -21,11 +21,11 @@ local function handle_session( event )
 end
 
 local function handle_player_joined( event )
-  -- member_add( event )
+  member_add( event )
 end
 
 local function handle_player_left( event )
-  -- member_del( event )
+  member_del( event )
 end
 
 local function handle_command_pb( event )
@@ -33,11 +33,6 @@ local function handle_command_pb( event )
   local member = dan.members[event.refid]
   local track_id = session.attributes.TrackId
   local vehicle_id = session.members[event.refid].attributes.VehicleId
-
-  -- dump_typed(dan.data.records)
-  -- print("member.steamid:" .. type(member.steamid) .. " = " .. member.steamid)
-  -- print("track_id:" .. type(track_id) .. " = " .. track_id)
-  -- print("vehicle_id:" .. type(vehicle_id) .. " = " .. vehicle_id)
 
   if (dan.data.records[member.steamid]) and 
      (dan.data.records[member.steamid][track_id]) and 
@@ -240,128 +235,9 @@ function pb_main( callback, ... )
 
 end
 
--- RegisterCallback( pb_main )
--- EnableCallback( Callback.Tick )
--- EnableCallback( Callback.EventLogged )
+RegisterCallback( pb_main )
+
+EnableCallback( Callback.EventLogged )
 EnableCallback( Callback.ParticipantCreated )
 EnableCallback( Callback.ParticipantRemoved )
 
-register_module(pb_main)
-
--- string name: string SessionCreated
--- string type: string Session
--- string time: number 1738303096
--- string index: number 0
--- string attributes:
-
--- string name: string SessionDestroyed
--- string type: string Session
--- string time: number 1738303377
--- string index: number 31
--- string attributes:
-
--- string name: string PlayerJoined
--- string type: string Player
--- string refid: number 61632
--- string time: number 1738303096
--- string index: number 1
--- string attributes:
---   string SteamId: string 76561197979302088
---   string Name: string Daan
-
--- string name: string PlayerLeft
--- string type: string Player
--- string refid: number 61632
--- string time: number 1738303377
--- string index: number 30
--- string attributes:
---   string GameReasonId: number 1
---   string Reason: string left
-
--- string name: string StageChanged
--- string type: string Session
--- string time: number 1738303214
--- string index: number 12
--- string attributes:
---   string NewStage: string Race1
---   string PreviousStage: string Practice1
-
--- string name: string State
--- string index: number 8
--- string type: string Participant
--- string time: number 1738301176
--- string attributes:
---   string PreviousState: string InGarage
---   string NewState: string Racing
--- string refid: number 43968
--- string participantid: number 1
-
--- string name: string Impact
--- string index: number 42
--- string type: string Participant
--- string time: number 1738301737
--- string attributes:
---   string CollisionMagnitude: number 882
---   string OtherParticipantId: number -1
--- string refid: number 27328
--- string participantid: number 2
-
-
--- string name: string CutTrackStart
--- string index: number 41
--- string type: string Participant
--- string time: number 1738301727
--- string attributes:
---   string Lap: number 1
---   string IsMainBranch: number 1
---   string RacePosition: number 1
---   string LapTime: number 20156
--- string refid: number 27328
--- string participantid: number 2
-
--- string name: string CutTrackEnd
--- string participantid: number 5
--- string type: string Participant
--- string refid: number 61632
--- string time: number 1738303296
--- string index: number 21
--- string attributes:
---   string PenaltyValue: number 0
---   string PenaltyThreshold: number 0
---   string ElapsedTime: number 3175
---   string SkippedTime: number 0
---   string PlaceGain: number 0
-
--- CLEAR LAP
--- string name: string Lap
--- string index: number 35
--- string type: string Participant
--- string time: number 1738301701
--- string attributes:
---   string CountThisLapTimes: number 1
---   string Sector2Time: number 14140
---   string Sector1Time: number 18760
---   string LapTime: number 43663
---   string DistanceTravelled: number 6339
---   string Sector3Time: number 10763
---   string RacePosition: number 1
---   string Lap: number 0
--- string refid: number 27328
--- string participantid: number 2
-
--- INVALID LAP
--- string name: string Lap
--- string index: number 46
--- string type: string Participant
--- string time: number 1738301771
--- string attributes:
---   string CountThisLapTimes: number 1
---   string Sector2Time: number 39781
---   string Sector1Time: number 20043
---   string LapTime: number 70759
---   string DistanceTravelled: number 3230
---   string Sector3Time: number 10935
---   string RacePosition: number 1
---   string Lap: number 1
--- string refid: number 27328
--- string participantid: number 2
