@@ -1,4 +1,4 @@
-print( "Callbacks:" ); dump( Callback, "  " )
+if not dan.data.records then dan.data.records = {} end
 
 print("Dan PB activated")
 

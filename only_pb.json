@@ -10,4 +10,4 @@ description : "Personal Best"
 apiVersion : [ 3, 0 ]
 
 // Lua files to load.
-files : [ "dan_pb.lua" ]
+files : [ "dan_lib.lua", "dan_pb.lua" ]
