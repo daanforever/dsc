@@ -22,6 +22,7 @@ end
 
 local function handle_player_joined( event )
   member_add( event )
+  show_user_commands( event.refid, 2000 )
 end
 
 local function handle_player_left( event )
@@ -213,7 +214,11 @@ end
 
 function pb_main( callback, ... )
 
-  if callback == Callback.EventLogged then
+  if callback == Callback.Tick then
+
+    flush()
+
+  elseif callback == Callback.EventLogged then
 
     local event = ...
 
@@ -237,6 +242,7 @@ end
 
 RegisterCallback( pb_main )
 
+EnableCallback( Callback.Tick )
 EnableCallback( Callback.EventLogged )
 EnableCallback( Callback.ParticipantCreated )
 EnableCallback( Callback.ParticipantRemoved )

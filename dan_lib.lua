@@ -66,40 +66,6 @@ function log( text )
 
 end
 
-function register_module( callback )
-  table.insert(dan.modules, callback)
-end
-
-function invoke_modules( ... )
-
-  for _, f in ipairs(dan.modules) do
-    f(...)
-  end
-
-end
-
-function show_admin_commands( refid, delay )
-
-  delay = delay or 0
-
-  send_later(delay, refid, {
-
-    "Admin commands:",
-    -- " /drs disable - disable Dynamic Race System",
-    -- " /drs enable - enable Dynamic Race System",
-    -- " /drs or /drs status - status of Dynamic Race System",
-    " /kick ID reason - kick player by ID (from /players)",
-    " /next - restart practice or transition practice > qualify > racing",
-    " /players - get list in format: ID Name",
-    " /practice N - change the practice duration to N minutes (min 5, max 60)",
-    " /qualify N - change the qualification duration to N minutes (min 5, max 60)",
-    " /race N - change the race duration to N minutes (min 5, max 60)",
-    " /rules - repeat the rules to everyone"
-
-  })
-
-end
-
 function show_user_commands( refid, delay )
 
   delay = delay or 0
@@ -107,7 +73,6 @@ function show_user_commands( refid, delay )
   send_later(delay, refid, {
 
     "Commands:",
-    " /help - shows available commands",
     " /pb - shows your Personal Best time",
     " /pb reset - resets your Personal Best time"
 
@@ -242,35 +207,6 @@ function flush_messages(now)
   
 end
 
-function dump_list( names, list )
-    for _, name in ipairs( names ) do
-      print( "- " .. name .. " = " .. tostring( list[ name ] ) )
-    end
-end
-
-function dump_callback(callback, ...)
-  
-  log( "Callback: " .. value_to_callback[callback] )
-
-  local args = {...}
-
-  for __, arg in ipairs(args) do
-
-    if type( arg ) == "table" then
-      dump_typed( arg )
-    else
-      print("Scalar: " .. arg)
-    end
-
-  end
-
-  log( "session.attributes:")
-  log( "  SessionStage: " .. session.attributes.SessionStage )
-  log( "  SessionPhase: " .. session.attributes.SessionPhase )
-  log( "  SessionState: " .. session.attributes.SessionState )
-
-end
-
 function starts_with( str, start )
   return str:sub(1, #start) == start
 end
@@ -284,16 +220,4 @@ function ms_to_human( lap_time )
     local ms  = math.floor( lap_time - (min * 60000) - (sec * 1000) )
 
     return string.format("%02d:%02d.%03d", min, sec, ms)
-end
-
-function table.size( tbl )
-  local size = 0
-
-  for n in pairs(tbl) do 
-
-    size = size + 1 
-    
-  end
-
-  return size
 end
