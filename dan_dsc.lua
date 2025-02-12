@@ -217,11 +217,11 @@ local function handle_admin_command( event )
 
 		if dan.members[event.refid].is_admin then
 
-			show_admin_commands( event.refid )
+			show_admin_commands( event.refid, 0 )
 
 		end
 
-		show_user_commands( event.refid )
+		show_user_commands( event.refid, 0 )
 
 	elseif starts_with(message, "/restart") then
 

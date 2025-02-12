@@ -29,7 +29,7 @@ local function handle_player_joined( event )
       SetNextSessionAttributes( { RaceLength = race_length } )
     end
 
-    SendChatToAll("[DynamicRace] Reached " .. max .. " players. Enable the race (next lobby)")
+    SendChatToAll("[DynamicRace] Reached " .. max .. " players. Enabling the race (next lobby)")
 
   else
 

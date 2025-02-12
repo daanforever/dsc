@@ -153,6 +153,7 @@ function broadcast_message(messages, delay)
   local send_time = delay + GetServerUptimeMs();
 
   if dan.scheduled_broadcasts[send_time] == nil then
+
     dan.scheduled_broadcasts[send_time] = messages
 
   else
@@ -171,24 +172,25 @@ end
 -- delay in seconds
 function send_later(delay, refid, messages)
 
-  log("send_later: " .. delay .. " " .. refid .. " " .. #messages)
+  log("send_later: " .. delay .. " " .. refid .. " " .. table.size(messages))
 
   local send_time = delay + GetServerUptimeMs();
 
   if dan.scheduled_messages[send_time] == nil then
 
     dan.scheduled_messages[send_time] = {}
-    dan.scheduled_messages[send_time][refid] = messages
 
-  elseif dan.scheduled_messages[send_time][refid] == nil then
+  end
 
-    dan.scheduled_messages[send_time][refid] = messages
+  if dan.scheduled_messages[send_time][refid] == nil then
 
-  else
+    dan.scheduled_messages[send_time][refid] = {}
 
-    for _, message in ipairs(messages) do
-      table.insert(dan.scheduled_messages[send_time][refid], message)
-    end
+  end
+
+  for _, message in ipairs(messages) do
+
+    table.insert(dan.scheduled_messages[send_time][refid], message)
 
   end
 
@@ -209,10 +211,13 @@ function flush_broadcasts(now)
     if now >= time then
 
       for _, message  in ipairs(messages) do
+
         SendChatToAll("[Server]: " .. message)
+
       end
 
       dan.scheduled_broadcasts[ time ] = nil
+
     end
   end
 
@@ -224,6 +229,7 @@ function flush_messages(now)
     if now >= time then
 
       for refid, messages  in pairs(refids) do
+        
         for _, message in ipairs(messages) do
 
           if dan.members[refid] then
@@ -234,6 +240,9 @@ function flush_messages(now)
           end
 
         end
+
+        dan.scheduled_messages[ time ][ refid ] = nil
+
       end
 
       dan.scheduled_messages[ time ] = nil
