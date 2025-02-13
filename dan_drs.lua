@@ -1,11 +1,14 @@
 -- Dynamic Race System
 
-local drs_enabled = true
-local race_mode = false
-local race_length = 10
-local max = 10
-local min = 5
+if not dan.config.drs then dan.config.drs = {} end
+if not dan.config.drs.race then dan.config.drs.race = {} end
 
+local drs_enabled = dan.config.drs.enabled
+local race_length = dan.config.drs.race.length
+local min = dan.config.drs.min
+local max = dan.config.drs.max
+
+local race_mode = false
 
 local function handle_player_joined( event )
 

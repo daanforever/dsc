@@ -19,5 +19,15 @@ config : {
     "* WE support each other to improve step by step.",
     "* WE respect all drivers: Drive clean, Chat clean.",
     " ",
-  ]
+  ],
+
+  "drs" : {
+    "enabled": false,
+    "min" : 5,
+    "max" : 15,
+    "race" : {
+      "length" : 10
+    }
+  },
+
 }
