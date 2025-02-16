@@ -119,12 +119,21 @@ function member_add( event )
 
   local refid = event.refid
 
-  if dan.members[refid] ~= nil then return end
+  -- Long names protection
+  if #event.attributes.Name > 64 then
 
-  dan.members[refid] = {}
-  dan.members[refid].name = event.attributes.Name
-  dan.members[refid].steamid = tonumber(event.attributes.SteamId)
-  dan.members[refid].is_admin = is_admin(dan.members[refid].steamid)
+    KickMember( refid )
+
+  else
+
+    if dan.members[refid] ~= nil then return end
+
+    dan.members[refid] = {}
+    dan.members[refid].name = event.attributes.Name
+    dan.members[refid].steamid = tonumber(event.attributes.SteamId)
+    dan.members[refid].is_admin = is_admin(dan.members[refid].steamid)
+
+  end
 
 end
 

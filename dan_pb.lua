@@ -2,6 +2,30 @@ if not dan.data.records then dan.data.records = {} end
 
 print("Dan PB activated")
 
+local function get_pb( refid )
+
+  local result = nil
+
+  local member = dan.members[refid]
+  local track_id = session.attributes.TrackId
+  local vehicle_id = session.members[refid].attributes.VehicleId
+  local vehicle_name = get_vehicle_name_by_id( vehicle_id )
+
+  if (dan.data.records[member.steamid]) and 
+     (dan.data.records[member.steamid][track_id]) and 
+     (dan.data.records[member.steamid][track_id][vehicle_id]) and
+     (dan.data.records[member.steamid][track_id][vehicle_id].LapTime) and
+     (dan.data.records[member.steamid][track_id][vehicle_id].LapTime > 0)
+  then
+
+    result = dan.data.records[member.steamid][track_id][vehicle_id].LapTime
+
+  end
+
+  return member, vehicle_name, result
+
+end
+
 local function hander_session_created( event )
   dan.members = {}
 end
@@ -29,28 +53,13 @@ local function handle_player_left( event )
 end
 
 local function handle_command_pb( event )
+  
+  local member, vehicle_name, lap_time = get_pb( event.refid )
 
-  local member = dan.members[event.refid]
-  local track_id = session.attributes.TrackId
-  local vehicle_id = session.members[event.refid].attributes.VehicleId
-
-  -- dump_typed(dan.data.records)
-  -- print("member.steamid:" .. type(member.steamid) .. " = " .. member.steamid)
-  -- print("track_id:" .. type(track_id) .. " = " .. track_id)
-  -- print("vehicle_id:" .. type(vehicle_id) .. " = " .. vehicle_id)
-
-  if (dan.data.records[member.steamid]) and 
-     (dan.data.records[member.steamid][track_id]) and 
-     (dan.data.records[member.steamid][track_id][vehicle_id]) and
-     (dan.data.records[member.steamid][track_id][vehicle_id].LapTime ~= nil)
-
-  then
-
-    local lap_time = dan.data.records[member.steamid][track_id][vehicle_id].LapTime
-    -- SendChatToMember( event.refid, "PB: " .. ms_to_human( lap_time ) )
+  if lap_time then
 
     local lap_time_human = ms_to_human( lap_time )
-    local vehicle_name = get_vehicle_name_by_id( vehicle_id )
+    -- local vehicle_name = get_vehicle_name_by_id( vehicle_id )
     local message = "PB: " .. lap_time_human .. " " .. member.name .. " (" .. vehicle_name .. ")"
     SendChatToAll( message )
 
@@ -190,6 +199,20 @@ local function handle_partipant_lap( event )
 
 end
 
+local function handle_partipant_created( event )
+  
+  local member, vehicle_name, lap_time = get_pb( event.refid )
+
+  if lap_time then
+
+    local lap_time_human = ms_to_human( lap_time )
+    local message = "PB: " .. lap_time_human .. " " .. member.name .. " (" .. vehicle_name .. ")"
+    SendChatToAll(message)
+
+  end
+
+end
+
 local function handle_partipant( event )
 
   if ( event.name == "State" ) then
@@ -211,6 +234,10 @@ local function handle_partipant( event )
   elseif ( event.name == "Lap" ) then
 
     handle_partipant_lap(event)
+
+  elseif ( event.name == "ParticipantCreated" ) then
+
+    handle_partipant_created(event)
 
   end
 

@@ -36,7 +36,7 @@ local function tick()
 	if scheduled_advance > 0 and now >= scheduled_advance then
 
 		scheduled_advance = 0
-	  AdvanceSession(true)
+	  AdvanceSession(false)
 
 	end
 
