@@ -205,7 +205,15 @@ end
 
 local function handle_command_rules( event )
 
+	if dan.members[ event.refid ].is_admin then
+
 		broadcast_message( dan.config.rules )
+
+	else
+
+		SendChatToMember( event.refid, dan.config.rules )
+
+	end
 
 end
 
@@ -213,17 +221,7 @@ local function handle_admin_command( event )
 
 	local message = event.attributes.Message
 
-	if message == "/help" then
-
-		if dan.members[event.refid].is_admin then
-
-			show_admin_commands( event.refid, 0 )
-
-		end
-
-		show_user_commands( event.refid, 0 )
-
-	elseif starts_with(message, "/restart") then
+	if starts_with(message, "/restart") then
 
 		handle_command_restart( event )
 
@@ -266,6 +264,30 @@ local function handle_admin_command( event )
 
 		handle_command_race( event )
 
+	end
+
+end
+
+local function handle_command_help( event )
+
+	if dan.members[event.refid].is_admin then
+
+		show_admin_commands( event.refid, 0 )
+
+	end
+
+	show_user_commands( event.refid, 0 )
+
+end
+
+local function handle_user_command( event )
+
+	local message = event.attributes.Message
+
+	if message == "/help" then
+
+		handle_command_help( event )
+
 	elseif message == "/rules" then
 
 		handle_command_rules( event )
@@ -274,20 +296,19 @@ local function handle_admin_command( event )
 
 end
 
-local function handle_command_player_chat( event )
+local function handle_player_chat( event )
 
 	local message = event.attributes.Message
 
-	-- Handle admin commands
 	if dan.members[event.refid].is_admin then
 
 		handle_admin_command( event )
 
-	else -- user is not an admin
+	end
 
-		log("CHAT [" .. dan.members[event.refid].name .. "] " .. message)
+	handle_user_command( event )
 
-	end -- dan.members[event.refid].is_admin
+	log("CHAT [" .. dan.members[event.refid].name .. "] " .. message)
 
 end
 
@@ -321,6 +342,24 @@ local function handle_player_joined( event )
 
 end
 
+local function hander_session_created( event )
+  dan.members = {}
+end
+
+local function hander_session_destroyed( event )
+  dan.members = {}
+end
+
+local function handle_session( event )
+
+  if ( event.name == "SessionCreated" ) then
+    hander_session_created(event)
+  elseif ( event.name == "SessionDestroyed" ) then
+    hander_session_destroyed(event)
+  end
+
+end
+
 local function handle_event_player( event )
 
 	-- PlayerJoined
@@ -339,7 +378,7 @@ local function handle_event_player( event )
 
 	if event.name == "PlayerChat" then
 
-		handle_command_player_chat( event )
+		handle_player_chat( event )
 
 	end -- event.name == "PlayerChat"
 
@@ -382,44 +421,29 @@ local function dsc_main( callback, ... )
 
 		handle_session_attributes_changed()
 
-	end
-
-	if callback == Callback.NextSessionAttributesChanged then
+	elseif callback == Callback.NextSessionAttributesChanged then
 
 		local changed = ...
 
 		log("NextAttributes changed:")
 		dump_list(changed, session.next_attributes)
 
-	end
-
-	-- Handle event
-	if callback == Callback.EventLogged then
+	elseif callback == Callback.EventLogged then
 
 		local event = ...
 
 		log("Dump callback: " .. value_to_callback[ callback ])
 		dump_typed( event )
 
-		if ( event.type == "Session" ) and ( event.name == "StateChanged" ) then
-			if ( event.attributes.NewState == "Loading" ) then
+    if ( event.type == "Session" ) then
 
-				SavePersistentData()
+      handle_session( event )
 
-			end
-		end
-
-		if ( event.type == "Session" ) and ( event.name == "SessionDestroyed" ) then
-			dan.members = {}
-		end
-
-		if event.type == "Player" then
+    elseif event.type == "Player" then
 
 			handle_event_player( event )
 
-		end
-
-		if event.type == "Participant" then
+		elseif event.type == "Participant" then
 
 			handle_event_participant( event )
 

@@ -109,7 +109,9 @@ function show_user_commands( refid, delay )
     "Commands:",
     " /help - shows available commands",
     " /pb - shows your Personal Best time",
-    " /pb reset - resets your Personal Best time"
+    " /pb reset - resets your Personal Best time",
+    " /rules - shows server rules",
+    " /sr - shows your Safety Rating",
 
   })
   
@@ -126,11 +128,12 @@ function member_add( event )
 
   else
 
-    if dan.members[refid] ~= nil then return end
+    -- if dan.members[refid] ~= nil then return end
 
     dan.members[refid] = {}
     dan.members[refid].name = event.attributes.Name
     dan.members[refid].steamid = tonumber(event.attributes.SteamId)
+    dan.members[refid].refid = refid
     dan.members[refid].is_admin = is_admin(dan.members[refid].steamid)
 
   end
@@ -314,4 +317,8 @@ function table.size( tbl )
   end
 
   return size
+end
+
+function trunc2(x)
+  return tonumber(string.format("%.02f", x))
 end

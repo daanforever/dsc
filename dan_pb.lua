@@ -27,11 +27,11 @@ local function get_pb( refid )
 end
 
 local function hander_session_created( event )
-  dan.members = {}
+  -- dan.members = {}
 end
 
 local function hander_session_destroyed( event )
-  dan.members = {}
+  -- dan.members = {}
 end
 
 local function handle_session( event )
@@ -173,7 +173,7 @@ local function handle_valid_lap( event )
 
     local lap_time_human = ms_to_human( lap_time )
     local vehicle_name = get_vehicle_name_by_id( vehicle_id )
-    local message = "PB: " .. lap_time_human .. " " .. member.name .. " (" .. vehicle_name .. ")"
+    local message = "New PB: " .. lap_time_human .. " " .. member.name .. " (" .. vehicle_name .. ")"
 
     SendChatToAll(message)
     log(message)
@@ -192,9 +192,13 @@ local function handle_partipant_lap( event )
     (event.attributes.Sector3Time > 0) and 
     (dan.members[event.refid].counting)
   then
-    handle_valid_lap(event)
+
+    handle_valid_lap( event )
+
   else
+
     dan.members[event.refid].counting = true
+    
   end
 
 end
