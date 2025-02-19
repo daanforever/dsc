@@ -3,7 +3,56 @@ if not dan.data.sr then dan.data.sr = {} end
 local watch_time = 5000
 local black = {}
 local white = {}
+local default_sr = 1
 local kick_rating = 0.1
+local temp = {} -- temporary storage for SR. Key is steamid
+
+local participants = {}
+
+local function time_to_punish( data )
+
+  local delta = 0 
+
+  if temp[data.steamid] > 1 then 
+
+    delta = 1 / temp[data.steamid]
+
+  elseif temp[data.steamid] > 0 then
+
+    delta = 1 / 10 * temp[data.steamid]
+
+  end
+
+  temp[data.steamid] = temp[data.steamid] - delta
+
+  local message = "SR: " .. data.name .. " decrease " .. trunc2( temp[data.steamid] ) .. " (-" .. delta .. ")"
+  log( message )
+  -- SendChatToAll(message)
+
+  if temp[data.steamid] <= kick_rating then
+
+
+    if dan.members[data.refid] then
+      -- Player is on the server
+
+      message = string.format("SR: %s has a dangerous SR level %.02f. Kicking", data.name, temp[data.steamid])
+      SendChatToAll( message )
+
+      KickMember( data.refid )
+
+    end
+
+  end
+
+  if not dan.data.sr[data.steamid] then
+
+    dan.data.sr[data.steamid] = {}
+
+  end
+  
+  dan.data.sr[data.steamid].sr = temp[data.steamid]
+
+end
 
 local function handle_session_attributes_changed()
 
@@ -25,43 +74,18 @@ local function handle_session_attributes_changed()
     if now >= data.timer then
       -- Time to punish
 
-      local sr = dan.data.sr[data.steamid].sr
-      local delta = 0 
+      if data.steamid then
 
-      if sr > 1 then 
+        time_to_punish( data )
 
-        delta = 1 / sr
+        black[pid] = nil
+        changed = true
 
-      elseif sr > 0 then
+      else
 
-        delta = 1 / 10 * sr
-
-      end
-
-      sr = sr - delta
-
-      local message = "SR: " .. data.name .. " decrease " .. trunc2(sr) .. " (-" .. delta .. ")"
-      log( message )
-      -- SendChatToAll(message)
-
-      if sr <= kick_rating then
-
-        message = string.format("SR: %s has a dangerous SR level %.02f. Kicking", data.name, sr)
-        SendChatToAll( message )
-
-        if dan.members[data.refid] then
-          -- Player is on the server
-
-          KickMember( data.refid )
-
-        end
+        log("SR: data.steamid is empty. Skipping")
 
       end
-
-      dan.data.sr[data.steamid].sr = sr
-
-      black[pid] = nil
-      changed = true
 
     end
 
@@ -76,7 +100,7 @@ end
 local function get_sr_text( event )
 
   local member = dan.members[event.refid]
-  return "SR: " .. trunc2(dan.data.sr[member.steamid].sr) .. " " .. member.name
+  return string.format( "SR: %.02f %s", temp[member.steamid], member.name )
 
 end
 
@@ -102,10 +126,13 @@ local function handle_player_joined( event )
 
   local member = dan.members[event.refid]
 
-  if not dan.data.sr[member.steamid] then
+  if dan.data.sr[member.steamid] then
 
-    dan.data.sr[member.steamid] = {}
-    dan.data.sr[member.steamid].sr = 1
+    temp[member.steamid] = tonumber( dan.data.sr[member.steamid].sr )
+
+  else
+
+    temp[member.steamid] = default_sr
 
   end
 
@@ -134,16 +161,15 @@ local function get_timer()
 
 end
 
-local function fill_refid( w, refid )
+local function fill_data( w, pid )
 
-  if w and (not w.refid) then
-    -- we know steamid of participant_id
+  w.refid = participants[pid].refid
+  w.steamid = dan.members[w.refid].steamid
+  w.name = dan.members[w.refid].name
 
-    w.refid = refid
-    w.steamid = dan.members[refid].steamid
-    w.name = dan.members[refid].name
+  local message = string.format( "SR: fill_data %s %s %s", w.refid, w.steamid, w.name )
 
-  end
+  DEBUG( message )
 
 end
 
@@ -195,9 +221,6 @@ local function handle_partipant_impact( event )
 
   end
 
-  -- black[other_participant_id] missing steamid on the first impact
-  fill_refid( black[participant_id], event.refid )
-
   if white[participant_id] then
     -- He accidentally got caught in the chain impact. No action required
     -- participant_id GOOD
@@ -240,8 +263,8 @@ local function handle_partipant_impact( event )
     set_black_timer( participant_id )
     set_black_timer( other_participant_id )
 
-    fill_refid( black[participant_id], event.refid )
-    -- we don't know steamid of other_participant_id
+    fill_data( black[participant_id], participant_id )
+    fill_data( black[other_participant_id], other_participant_id )
 
   end
 
@@ -263,13 +286,18 @@ local function handle_partipant_lap( event )
     (event.attributes.Sector3Time > 0)
   then
 
-    local sr = dan.data.sr[member.steamid].sr
-    local delta = 1 / sr
+    local delta = 1 / temp[member.steamid]
 
-    local message = "SR: " .. member.name .. " increase " .. trunc2(sr) .. " (+" .. trunc2(delta) .. ")"
+    local message = "SR: " .. member.name .. " increase " .. trunc2( temp[member.steamid] ) .. " (+" .. trunc2(delta) .. ")"
     log(message)
 
-    dan.data.sr[member.steamid].sr = sr + delta
+    if not dan.data.sr[data.steamid] then
+
+      dan.data.sr[data.steamid] = {}
+
+    end
+
+    dan.data.sr[member.steamid].sr = temp[member.steamid] + delta
     SavePersistentData()
 
   end
@@ -278,7 +306,18 @@ end
 
 local function handle_partipant_created( event )
 
-  -- SendChatToAll( get_sr_text( event ) )
+  participants[event.participantid] = {}
+  participants[event.participantid].refid = event.refid
+
+end
+
+local function handle_partipant_destroyed( event )
+  
+  if participants[event.participantid] then
+
+    participants[event.participantid] = nil
+
+  end
 
 end
 
@@ -309,6 +348,50 @@ local function handle_partipant( event )
 
     handle_partipant_created( event )
 
+  elseif ( event.name == "ParticipantDestroyed" ) then
+
+    handle_partipant_destroyed( event )
+
+  end
+
+end
+
+local function remove_default_sr()
+  -- Remove default SR to prevent unnecessary data growth
+
+  local changed = false
+
+  for steamid, data in pairs( dan.data.sr ) do
+
+    if data.sr == default_sr then
+
+      dan.data.sr[steamid] = nil
+      changed = true
+
+    end
+
+  end
+
+  if changed then
+
+    SavePersistentData()
+
+  end
+
+end
+
+local function handle_session_created( event )
+  
+  remove_default_sr()
+
+end
+
+local function handle_session( event )
+
+  if ( event.name == "SessionCreated" ) then
+
+    handle_session_created( event )
+
   end
 
 end
@@ -331,6 +414,10 @@ function sr_main(callback, ...)
     elseif ( event.type == "Participant" ) then
 
       handle_partipant( event )
+
+    elseif ( event.type == "Session" ) then
+
+      handle_session( event )
 
     end
 

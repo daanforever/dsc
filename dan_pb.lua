@@ -166,7 +166,7 @@ local function handle_valid_lap( event )
   then
 
     record[track_id][vehicle_id].LapTime = lap_time
-    record[track_id][vehicle_id].Name = member.name
+    -- record[track_id][vehicle_id].Name = member.name
     dan.data.records[member.steamid] = record
 
     SavePersistentData()
