@@ -2,9 +2,16 @@ if not dan.data.records then dan.data.records = {} end
 
 print("Dan PB activated")
 
+local function get_date_str()
+
+  return os.date("%Y%m%d")
+
+end
+
 local function get_pb( refid )
 
-  local result = nil
+  local lap_time = nil
+  local today = {}
 
   local member = dan.members[refid]
   local track_id = session.attributes.TrackId
@@ -18,11 +25,12 @@ local function get_pb( refid )
      (dan.data.records[member.steamid][track_id][vehicle_id].LapTime > 0)
   then
 
-    result = dan.data.records[member.steamid][track_id][vehicle_id].LapTime
+    lap_time = dan.data.records[member.steamid][track_id][vehicle_id].LapTime
+    today = dan.data.records[member.steamid][track_id][vehicle_id].Today
 
   end
 
-  return member, vehicle_name, result
+  return member, vehicle_name, lap_time, today
 
 end
 
@@ -91,6 +99,25 @@ local function handle_command_pb_reset( event )
 
 end
 
+local function handle_command_pb_today( event )
+
+  local member, vehicle_name, lap_time, today = get_pb( event.refid )
+
+  if today and ( type(today) == "table" ) and ( today.Date == get_date_str() )then
+
+    local lap_time_human = ms_to_human( today.LapTime )
+    local message = "Today PB: " .. lap_time_human .. " " .. member.name .. " (" .. vehicle_name .. ")"
+
+    SendChatToAll( message )
+
+  else
+
+    SendChatToMember( event.refid, "Today PB: no records" )
+
+  end
+
+end
+
 local function handle_player_chat( event )
   
   local message = event.attributes.Message
@@ -102,6 +129,10 @@ local function handle_player_chat( event )
   elseif message == "/pb reset" then
 
     handle_command_pb_reset( event )
+
+  elseif message == "/pb today" then
+
+    handle_command_pb_today( event )
 
   end
 
@@ -154,13 +185,16 @@ local function handle_valid_lap( event )
   local member = dan.members[event.refid]
   local track_id = session.attributes.TrackId
   local vehicle_id = session.members[event.refid].attributes.VehicleId
+  local vehicle_name = get_vehicle_name_by_id( vehicle_id )
   local lap_time = event.attributes.LapTime
   local record = dan.data.records[member.steamid]
+  local changed = false
 
   if not record then record = {} end
   if not record[track_id] then record[track_id] = {} end
   if not record[track_id][vehicle_id] then record[track_id][vehicle_id] = {} end
-
+  if not record[track_id][vehicle_id].Today then record[track_id][vehicle_id].Today = {} end
+  
   if ( not record[track_id][vehicle_id].LapTime ) or
      ( record[track_id][vehicle_id].LapTime > lap_time )
   then
@@ -169,14 +203,43 @@ local function handle_valid_lap( event )
     -- record[track_id][vehicle_id].Name = member.name
     dan.data.records[member.steamid] = record
 
-    SavePersistentData()
+    changed = true
 
     local lap_time_human = ms_to_human( lap_time )
-    local vehicle_name = get_vehicle_name_by_id( vehicle_id )
     local message = "New PB: " .. lap_time_human .. " " .. member.name .. " (" .. vehicle_name .. ")"
 
     SendChatToAll(message)
     log(message)
+
+  end
+
+  if (not record[track_id][vehicle_id].Today.LapTime ) or
+     ( record[track_id][vehicle_id].Today.LapTime > lap_time )
+  then
+
+    record[track_id][vehicle_id].Today.LapTime = lap_time
+    record[track_id][vehicle_id].Today.Date = get_date_str()
+
+    dan.data.records[member.steamid] = record
+
+    if not changed then
+      -- skip duplicate notification
+
+      local lap_time_human = ms_to_human( lap_time )
+      local message = "New daily PB: " .. lap_time_human .. " " .. member.name .. " (" .. vehicle_name .. ")"
+
+      SendChatToAll(message)
+      log(message)
+
+    end
+
+    changed = true
+
+  end
+
+  if changed then
+
+    SavePersistentData()
 
   end
 
@@ -271,13 +334,18 @@ function pb_main( callback, ... )
 
 end
 
--- RegisterCallback( pb_main )
--- EnableCallback( Callback.Tick )
--- EnableCallback( Callback.EventLogged )
 EnableCallback( Callback.ParticipantCreated )
 EnableCallback( Callback.ParticipantRemoved )
 
 register_module(pb_main)
+
+add_user_commands({
+
+    " /pb - shows your Personal Best time",
+    " /pb today - shows your Personal Best time for today",
+    " /pb reset - resets your Personal Best time"
+
+})
 
 -- string name: string SessionCreated
 -- string type: string Session

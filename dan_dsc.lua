@@ -332,13 +332,15 @@ local function handle_player_joined( event )
 
 	if dan.members[ event.refid ].is_admin then
 
-    show_admin_commands( event.refid, 3000 )
+    -- show_admin_commands( event.refid, 3000 )
 
     log("Joined admin " .. dan.members[ event.refid ].name)
 
   end
 
-  show_user_commands( event.refid, 3000 )
+  -- show_user_commands( event.refid, 3000 )
+
+  send_later( 3000, event.refid, { "Type /help in chat to get a list of available commands" } )
 
 end
 
@@ -350,12 +352,16 @@ local function hander_session_destroyed( event )
   dan.members = {}
 end
 
-local function handle_session( event )
+local function handle_event_session( event )
 
   if ( event.name == "SessionCreated" ) then
+
     hander_session_created(event)
+
   elseif ( event.name == "SessionDestroyed" ) then
+
     hander_session_destroyed(event)
+
   end
 
 end
@@ -386,7 +392,7 @@ end
 
 local function handle_participant_created( event )
 
-	SendChatToMember( event.refid, "Type /help in chat to get a list of available commands")
+	-- SendChatToMember( event.refid, "Type /help in chat to get a list of available commands")
 
 end
 
@@ -400,25 +406,35 @@ local function handle_event_participant( event )
 
 end
 
+local function handle_event_logged( event )
+
+  if ( event.type == "Session" ) then
+
+    handle_event_session( event )
+
+  elseif event.type == "Player" then
+
+		handle_event_player( event )
+
+	elseif event.type == "Participant" then
+
+		handle_event_participant( event )
+
+	end
+
+end
+
 -- ----------------------------------------------------------------------------
 -- Main addon callback
-local function dsc_main( callback, ... )
+local function dsc( callback, ... )
 
 	-- Regular tick
 	if callback == Callback.Tick then
 
 		tick()
-		flush()
 
-	-- else
-
-	-- 	dump_callback( callback, ... )
-
-	end
-
-  -- Disable overtime
-	if callback == Callback.SessionAttributesChanged then
-
+	elseif callback == Callback.SessionAttributesChanged then
+	
 		handle_session_attributes_changed()
 
 	elseif callback == Callback.NextSessionAttributesChanged then
@@ -435,59 +451,33 @@ local function dsc_main( callback, ... )
 		log("Dump callback: " .. value_to_callback[ callback ])
 		dump_typed( event )
 
-    if ( event.type == "Session" ) then
-
-      handle_session( event )
-
-    elseif event.type == "Player" then
-
-			handle_event_player( event )
-
-		elseif event.type == "Participant" then
-
-			handle_event_participant( event )
-
-		end
+		handle_event_logged( event )
 
 	end -- callback == Callback.EventLogged
 
-
-	-- pb_main( callback, ... )
-	invoke_modules( callback, ... )
-
 end -- function dsc_main
 
--- Main
-RegisterCallback( dsc_main )
--- EnableCallback( Callback.Tick )
--- EnableCallback( Callback.MemberStateChanged )
--- EnableCallback( Callback.ServerStateChanged )
+register_module( dsc )
 
--- EnableCallback( Callback.MemberStateChanged )
--- EnableCallback( Callback.ParticipantAttributesChanged )
-EnableCallback( Callback.Tick )
--- EnableCallback( Callback.ServerStateChanged )
-EnableCallback( Callback.EventLogged )
--- EnableCallback( Callback.MemberLeft )
-EnableCallback( Callback.SessionAttributesChanged )
--- EnableCallback( Callback.MemberJoined )
--- EnableCallback( Callback.HostMigrated )
--- EnableCallback( Callback.SessionManagerStateChanged )
--- EnableCallback( Callback.ParticipantCreated )
--- EnableCallback( Callback.ParticipantRemoved )
--- EnableCallback( Callback.NextSessionAttributesChanged )
--- EnableCallback( Callback.MemberAttributesChanged )
+add_admin_commands({
+
+  " /kick ID reason - kick player by ID (from /players)",
+  " /next - restart practice or transition practice > qualify > racing",
+  " /players - get list in format: ID Name",
+  " /practice N - change the practice duration to N minutes (min 5, max 60)",
+  " /qualify N - change the qualification duration to N minutes (min 5, max 60)",
+  " /race N - change the race duration to N minutes (min 5, max 60)",
+  " /rules - repeat the rules to everyone"
+
+})
+
+add_user_commands({
+
+  " /help - shows available commands",
+  " /rules - shows server rules"
+
+})
 
 print("DSC activated")
 
 -- EOF --
-
--- callback: EventLogged
--- string time: number 1738417289
--- string attributes:
---   string PreviousStage: string Practice1
---   string NewStage: string Race1
---   string Length: number 10
--- string name: string StageChanged
--- string index: number 30
--- string type: string Session

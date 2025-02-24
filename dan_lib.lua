@@ -16,6 +16,9 @@ if not dan.config.rules then dan.config.rules = {} end
 dan.data = addon_storage.data
 if not dan.data then dan.data = {} end
 
+if not dan.admin_commands then dan.admin_commands = {} end
+if not dan.user_commands then dan.user_commands = {} end
+
 local function normalize_storage( original )
   
   local result = {}
@@ -82,21 +85,25 @@ function show_admin_commands( refid, delay )
 
   delay = delay or 0
 
-  send_later(delay, refid, {
+  send_later( delay, refid, { "Admin commands:" } )
+  send_later( delay, refid, dan.admin_commands )
+  send_later( delay, refid, { " " } )
 
-    "Admin commands:",
-    -- " /drs disable - disable Dynamic Race System",
-    -- " /drs enable - enable Dynamic Race System",
-    -- " /drs or /drs status - status of Dynamic Race System",
-    " /kick ID reason - kick player by ID (from /players)",
-    " /next - restart practice or transition practice > qualify > racing",
-    " /players - get list in format: ID Name",
-    " /practice N - change the practice duration to N minutes (min 5, max 60)",
-    " /qualify N - change the qualification duration to N minutes (min 5, max 60)",
-    " /race N - change the race duration to N minutes (min 5, max 60)",
-    " /rules - repeat the rules to everyone"
+  -- send_later(delay, refid, {
 
-  })
+  --   "Admin commands:",
+  --   -- " /drs disable - disable Dynamic Race System",
+  --   -- " /drs enable - enable Dynamic Race System",
+  --   -- " /drs or /drs status - status of Dynamic Race System",
+  --   " /kick ID reason - kick player by ID (from /players)",
+  --   " /next - restart practice or transition practice > qualify > racing",
+  --   " /players - get list in format: ID Name",
+  --   " /practice N - change the practice duration to N minutes (min 5, max 60)",
+  --   " /qualify N - change the qualification duration to N minutes (min 5, max 60)",
+  --   " /race N - change the race duration to N minutes (min 5, max 60)",
+  --   " /rules - repeat the rules to everyone"
+
+  -- })
 
 end
 
@@ -104,16 +111,19 @@ function show_user_commands( refid, delay )
 
   delay = delay or 0
 
-  send_later(delay, refid, {
+  send_later( delay, refid, { "Commands:" } )
+  send_later( delay, refid, dan.user_commands )
 
-    "Commands:",
-    " /help - shows available commands",
-    " /pb - shows your Personal Best time",
-    " /pb reset - resets your Personal Best time",
-    " /rules - shows server rules",
-    " /sr - shows your Safety Rating",
+  -- send_later(delay, refid, {
 
-  })
+  --   "Commands:",
+  --   " /help - shows available commands",
+  --   " /pb - shows your Personal Best time",
+  --   " /pb reset - resets your Personal Best time",
+  --   " /rules - shows server rules",
+  --   " /sr - shows your Safety Rating",
+
+  -- })
   
 end
 
@@ -202,7 +212,7 @@ function send_later(delay, refid, messages)
 
   for _, message in ipairs(messages) do
 
-    table.insert(dan.scheduled_messages[send_time][refid], message)
+    table.insert( dan.scheduled_messages[send_time][refid], message )
 
   end
 
@@ -308,17 +318,52 @@ function ms_to_human( lap_time )
 end
 
 function table.size( tbl )
+
   local size = 0
 
-  for n in pairs(tbl) do 
+  if type( tbl ) == "table" then
 
-    size = size + 1 
-    
+    for n in pairs(tbl) do 
+
+      size = size + 1 
+      
+    end
+
+  else
+
+    log( "[ERROR] wrong type given from " .. debug.getinfo(2).name )
+
   end
 
   return size
+
+end
+
+function table.insert_list( tbl, list )
+
+  for k, v in ipairs( list ) do
+
+    table.insert( tbl, v )
+
+  end
+
 end
 
 function trunc2(x)
   return tonumber(string.format("%.02f", x))
+end
+
+
+function add_admin_commands( list )
+
+  table.insert_list( dan.admin_commands, list )
+  table.sort( dan.admin_commands )
+
+end
+
+function add_user_commands( list )
+
+  table.insert_list( dan.user_commands, list )
+  table.sort( dan.user_commands )
+
 end

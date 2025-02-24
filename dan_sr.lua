@@ -1,4 +1,4 @@
-if not dan.data.sr then dan.data.sr = {} end
+if not dan.data.records then dan.data.records = {} end
 
 local watch_time = 5000
 local black = {}
@@ -6,8 +6,6 @@ local white = {}
 local default_sr = 1
 local kick_rating = 0.1
 local temp = {} -- temporary storage for SR. Key is steamid
-
-local participants = {}
 
 local function time_to_punish( data )
 
@@ -53,13 +51,13 @@ local function time_to_punish( data )
 
   end
 
-  if not dan.data.sr[data.steamid] then
+  if not dan.data.records[data.steamid] then
 
-    dan.data.sr[data.steamid] = {}
+    dan.data.records[data.steamid] = {}
 
   end
   
-  dan.data.sr[data.steamid].sr = temp[data.steamid]
+  dan.data.records[data.steamid].sr = temp[data.steamid]
 
 end
 
@@ -136,9 +134,9 @@ local function handle_player_joined( event )
 
   local member = dan.members[event.refid]
 
-  if dan.data.sr[member.steamid] then
+  if dan.data.records[member.steamid] then
 
-    temp[member.steamid] = tonumber( dan.data.sr[member.steamid].sr )
+    temp[member.steamid] = tonumber( dan.data.records[member.steamid].sr )
 
   else
 
@@ -163,6 +161,7 @@ local function handle_player( event )
 end
 
 local function handle_partipant_state( event )
+
 end
 
 local function get_timer()
@@ -173,7 +172,7 @@ end
 
 local function fill_data( w, pid )
 
-  w.refid = participants[pid].refid
+  w.refid = dan.participants[pid].refid
   w.steamid = dan.members[w.refid].steamid
   w.name = dan.members[w.refid].name
 
@@ -301,15 +300,15 @@ local function handle_partipant_lap( event )
     local message = "SR: " .. member.name .. " increase " .. trunc2( temp[member.steamid] ) .. " (+" .. trunc2(delta) .. ")"
     log(message)
 
-    SendChatToMember( event.refid, "SR: " .. trunc2( temp[data.steamid] ) .. " (+" .. trunc2( delta ) .. ")" )
+    SendChatToMember( event.refid, "SR: " .. trunc2( temp[member.steamid] ) .. " (+" .. trunc2( delta ) .. ")" )
 
-    if not dan.data.sr[data.steamid] then
+    if not dan.data.records[member.steamid] then
 
-      dan.data.sr[data.steamid] = {}
+      dan.data.records[member.steamid] = {}
 
     end
 
-    dan.data.sr[member.steamid].sr = temp[member.steamid] + delta
+    dan.data.records[member.steamid].sr = temp[member.steamid] + delta
     SavePersistentData()
 
   end
@@ -318,18 +317,9 @@ end
 
 local function handle_partipant_created( event )
 
-  participants[event.participantid] = {}
-  participants[event.participantid].refid = event.refid
-
 end
 
 local function handle_partipant_destroyed( event )
-  
-  if participants[event.participantid] then
-
-    participants[event.participantid] = nil
-
-  end
 
 end
 
@@ -373,11 +363,11 @@ local function remove_default_sr()
 
   local changed = false
 
-  for steamid, data in pairs( dan.data.sr ) do
+  for steamid, data in pairs( dan.data.records ) do
 
     if data.sr == default_sr then
 
-      dan.data.sr[steamid] = nil
+      dan.data.records[steamid].sr = nil
       changed = true
 
     end
@@ -438,6 +428,13 @@ function sr_main(callback, ...)
 end
 
 register_module(sr_main)
+
+add_user_commands({
+
+  " /sr - shows your Safety Rating"
+
+})
+
 
 -- EOF --
 

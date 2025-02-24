@@ -1,22 +1,22 @@
+local function handle_player( event )
+  -- body
+end
+
+local function handle_partipant_state( event )
+  -- body
+end
+
+local function handle_partipant_lap( event )
+  -- body
+end
 
 local function handle_partipant_created( event )
-
-  participants[event.participantid] = {}
-  participants[event.participantid].refid = event.refid
 
 end
 
 local function handle_partipant_destroyed( event )
   
-  if participants[event.participantid] then
-
-    participants[event.participantid] = nil
-
-  end
-
 end
-
-
 
 local function handle_partipant( event )
 
@@ -60,4 +60,4 @@ function convoy(callback, ...)
 
 end
 
-register_module(convoy)
+register_module( convoy )

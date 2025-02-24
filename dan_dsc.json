@@ -13,4 +13,4 @@ apiVersion : [ 3, 0 ]
 depends : [ "lib_rotate" ]
 
 // Lua files to load.
-files : [ "dan_lib.lua", "dan_dsc.lua", "dan_pb.lua", "dan_vote.lua", "dan_drs.lua", "dan_safety_rating.lua", "dan_convoy.lua" ]
+files : [ "dan_lib.lua", "main.lua", "dan_dsc.lua", "dan_pb.lua", "dan_vote.lua", "dan_drs.lua", "dan_sr.lua", "dan_convoy.lua", "migrations.lua" ]
