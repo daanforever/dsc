@@ -27,6 +27,15 @@ local function time_to_punish( data )
 
   local message = "SR: " .. data.name .. " decrease " .. trunc2( temp[data.steamid] ) .. " (-" .. delta .. ")"
   log( message )
+
+
+  if dan.members[data.refid] then
+    -- Player is on the server
+
+    SendChatToMember( data.refid, "SR: " .. trunc2( temp[data.steamid] ) .. " (-" .. trunc2( delta ) .. ")" )
+
+  end
+
   -- SendChatToAll(message)
 
   if temp[data.steamid] <= kick_rating then
@@ -78,7 +87,6 @@ local function handle_session_attributes_changed()
 
         time_to_punish( data )
 
-        black[pid] = nil
         changed = true
 
       else
@@ -86,6 +94,8 @@ local function handle_session_attributes_changed()
         log("SR: data.steamid is empty. Skipping")
 
       end
+
+      black[pid] = nil
 
     end
 
@@ -290,6 +300,8 @@ local function handle_partipant_lap( event )
 
     local message = "SR: " .. member.name .. " increase " .. trunc2( temp[member.steamid] ) .. " (+" .. trunc2(delta) .. ")"
     log(message)
+
+    SendChatToMember( event.refid, "SR: " .. trunc2( temp[data.steamid] ) .. " (+" .. trunc2( delta ) .. ")" )
 
     if not dan.data.sr[data.steamid] then
 
