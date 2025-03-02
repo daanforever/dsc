@@ -92,7 +92,7 @@ local function handle_command_pb_reset( event )
   then
 
     dan.data.records[member.steamid][track_id][vehicle_id].LapTime = nil
-    SavePersistentData()
+    request_save_data()
     SendChatToMember( event.refid, "PB has been removed" )
 
   end
@@ -196,6 +196,7 @@ local function handle_valid_lap( event )
   if not record[track_id][vehicle_id].Today then record[track_id][vehicle_id].Today = {} end
   
   if ( not record[track_id][vehicle_id].LapTime ) or
+     ( record[track_id][vehicle_id].LapTime == 0 ) or
      ( record[track_id][vehicle_id].LapTime > lap_time )
   then
 
@@ -214,6 +215,7 @@ local function handle_valid_lap( event )
   end
 
   if (not record[track_id][vehicle_id].Today.LapTime ) or
+     ( record[track_id][vehicle_id].Today.LapTime == 0 ) or
      ( record[track_id][vehicle_id].Today.LapTime > lap_time )
   then
 
@@ -237,11 +239,7 @@ local function handle_valid_lap( event )
 
   end
 
-  if changed then
-
-    SavePersistentData()
-
-  end
+  if changed then request_save_data() end
 
 end
 

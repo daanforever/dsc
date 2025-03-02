@@ -19,6 +19,8 @@ if not dan.data then dan.data = {} end
 if not dan.admin_commands then dan.admin_commands = {} end
 if not dan.user_commands then dan.user_commands = {} end
 
+dan.save_data_requested = false
+
 local function normalize_storage( original )
   
   local result = {}
@@ -257,7 +259,7 @@ function flush_messages(now)
           if dan.members[refid] then
 
             SendChatToMember(refid, message)
-            log("Sent to " .. dan.members[refid].name .. ": " .. message) 
+            -- log("Sent to " .. dan.members[refid].name .. ": " .. message) 
 
           end
 
@@ -294,11 +296,6 @@ function dump_callback(callback, ...)
     end
 
   end
-
-  log( "session.attributes:")
-  log( "  SessionStage: " .. session.attributes.SessionStage )
-  log( "  SessionPhase: " .. session.attributes.SessionPhase )
-  log( "  SessionState: " .. session.attributes.SessionState )
 
 end
 
@@ -349,6 +346,35 @@ function table.insert_list( tbl, list )
 
 end
 
+function table.contains( tbl, element )
+
+  local result = false
+
+  for _, value in pairs( tbl ) do
+
+    if value == element then result = true end
+
+  end
+
+  return result
+
+end
+
+function table.find( tbl, element )
+
+  local result = nil
+
+  for key, value in pairs( tbl ) do
+
+    if value == element then result = key end
+
+  end
+
+  return result
+
+end
+
+
 function trunc2(x)
   return tonumber(string.format("%.02f", x))
 end
@@ -365,5 +391,20 @@ function add_user_commands( list )
 
   table.insert_list( dan.user_commands, list )
   table.sort( dan.user_commands )
+
+end
+
+function request_save_data()
+
+  if not dan.save_data_requested then
+
+    DEBUG("First request_save_data()")
+    dan.save_data_requested = GetServerUptimeMs();
+
+  else
+
+    DEBUG("Repeated request_save_data()")
+
+  end
 
 end

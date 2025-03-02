@@ -99,9 +99,7 @@ local function handle_session_attributes_changed()
 
   end
 
-  if changed then
-    SavePersistentData()
-  end
+  if changed then request_save_data() end
 
 end
 
@@ -134,7 +132,7 @@ local function handle_player_joined( event )
 
   local member = dan.members[event.refid]
 
-  if dan.data.records[member.steamid] then
+  if dan.data.records[member.steamid] and dan.data.records[member.steamid].sr then
 
     temp[member.steamid] = tonumber( dan.data.records[member.steamid].sr )
 
@@ -302,14 +300,12 @@ local function handle_partipant_lap( event )
 
     SendChatToMember( event.refid, "SR: " .. trunc2( temp[member.steamid] ) .. " (+" .. trunc2( delta ) .. ")" )
 
-    if not dan.data.records[member.steamid] then
+    if not dan.data.records[member.steamid] then dan.data.records[member.steamid] = {} end
 
-      dan.data.records[member.steamid] = {}
+    temp[member.steamid] = temp[member.steamid] + delta
+    dan.data.records[member.steamid].sr = temp[member.steamid]
 
-    end
-
-    dan.data.records[member.steamid].sr = temp[member.steamid] + delta
-    SavePersistentData()
+    request_save_data()
 
   end
 
@@ -374,11 +370,7 @@ local function remove_default_sr()
 
   end
 
-  if changed then
-
-    SavePersistentData()
-
-  end
+  if changed then request_save_data() end
 
 end
 

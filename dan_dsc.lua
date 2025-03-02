@@ -448,8 +448,12 @@ local function dsc( callback, ... )
 
 		local event = ...
 
-		log("Dump callback: " .. value_to_callback[ callback ])
-		dump_typed( event )
+		if event.type ~= "Session" and event.name ~= "ServerChat" then
+
+			log("Dump callback: " .. value_to_callback[ callback ])
+			dump_typed( event )
+
+		end
 
 		handle_event_logged( event )
 

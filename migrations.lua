@@ -1,3 +1,6 @@
+if not dan.data.migrations then dan.data.migrations = {} end
+if not dan.data.migrations.applied then dan.data.migrations.applied = {} end
+
 local list = {}
 
 local function migration_sr_to_records()
@@ -23,17 +26,13 @@ local function run_migrations()
 
   local changed = false
 
-
-  if not dan.data.migrations then dan.data.migrations = {} end
-  if not dan.data.migrations.applied then dan.data.migrations.applied = {} end
-
   for num, func in pairs( list ) do
 
-    if not dan.data.migrations.applied[ tostring(num) ] then
+    if not dan.data.migrations.applied[num] then
 
       func()
 
-      dan.data.migrations.applied[ tostring(num) ] = true
+      dan.data.migrations.applied[num] = true
 
       changed = true
       log("Migration " .. num .. " has beed applied")
@@ -46,11 +45,7 @@ local function run_migrations()
 
   end
 
-  if changed then
-
-    SavePersistentData()
-
-  end
+  if changed then request_save_data() end
 
 end
 
