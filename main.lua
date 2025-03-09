@@ -20,7 +20,6 @@ local function handle_session_attributes_changed()
 
   if is_time_to_save_data() then
 
-    DEBUG("SavePersistentData() in main.lua")
     SavePersistentData()
 
     dan.save_data_requested = false

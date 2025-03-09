@@ -136,6 +136,7 @@ function member_add( event )
   -- Long names protection
   if #event.attributes.Name > 64 then
 
+    log("KickMember " .. event.attributes.SteamId .. " too long name")
     KickMember( refid )
 
   else

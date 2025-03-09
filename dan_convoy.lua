@@ -7,7 +7,7 @@ local function find_convoy_by( refid )
 
   for num, convoy in ipairs( convoys ) do
 
-    if (convoy.leader == refid) or (table.contain( convoy.members, refid )) then
+    if (convoy.leader == refid) or (table.contains( convoy.members, refid )) then
 
       result = num
 

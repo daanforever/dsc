@@ -344,23 +344,35 @@ local function handle_player_joined( event )
 
 end
 
+local function handle_player_left( event )
+	-- body
+end
+
 local function hander_session_created( event )
   dan.members = {}
 end
 
+local function hander_session_changed( event )
+	scheduled_restart = 0
+end
+
 local function hander_session_destroyed( event )
-  dan.members = {}
+  ServerRestart()
 end
 
 local function handle_event_session( event )
 
   if ( event.name == "SessionCreated" ) then
 
-    hander_session_created(event)
+    hander_session_created( event )
+
+  elseif ( event.name == "StateChanged" ) then
+
+    hander_session_changed( event )
 
   elseif ( event.name == "SessionDestroyed" ) then
 
-    hander_session_destroyed(event)
+    hander_session_destroyed( event )
 
   end
 
@@ -372,6 +384,10 @@ local function handle_event_player( event )
 	if event.name == "PlayerJoined" then
 
 		handle_player_joined( event )
+
+	elseif event.name == "PlayerLeft" then
+
+		handle_player_left( event )
 
 	end
 
@@ -392,7 +408,13 @@ end
 
 local function handle_participant_created( event )
 
-	-- SendChatToMember( event.refid, "Type /help in chat to get a list of available commands")
+	local member = dan.members[event.refid]
+
+	if member.is_admin then
+
+		SendChatToAll( member.name .. " was granted admin privileges." )
+
+	end
 
 end
 
