@@ -4,24 +4,28 @@ local watch_time = 5000
 local black = {}
 local white = {}
 local default_sr = 1
-local kick_rating = 0.1
+local kick_rating = 0.5
 local temp = {} -- temporary storage for SR. Key is steamid
 
 local function time_to_punish( data )
 
-  local delta = 0 
+  local delta = 0.5
 
-  if temp[data.steamid] > 1 then 
+  if temp[data.steamid] <= 0 then
 
-    delta = 1 / temp[data.steamid]
+    delta = 0
+    temp[data.steamid] = 0
 
-  elseif temp[data.steamid] > 0 then
+  elseif temp[data.steamid] < delta then
 
-    delta = 1 / 10 * temp[data.steamid]
+    delta = temp[data.steamid]
+    temp[data.steamid] = 0
+
+  else
+
+    temp[data.steamid] = temp[data.steamid] - delta
 
   end
-
-  temp[data.steamid] = temp[data.steamid] - delta
 
   local message = "SR: " .. data.name .. " decrease " .. trunc2( temp[data.steamid] ) .. " (-" .. delta .. ")"
   log( message )
@@ -34,16 +38,14 @@ local function time_to_punish( data )
 
   end
 
-  -- SendChatToAll(message)
-
-  if temp[data.steamid] <= kick_rating then
-
+  if temp[data.steamid] < kick_rating then
 
     if dan.members[data.refid] then
       -- Player is on the server
 
       message = string.format("SR: %s has a dangerous SR level %.02f. Kicking", data.name, temp[data.steamid])
       SendChatToAll( message )
+      log( message )
 
       KickMember( data.refid )
 
