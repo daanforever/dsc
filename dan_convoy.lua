@@ -85,7 +85,7 @@ local function handle_convoy_join( event )
 
     else
 
-      SendChatToMember( event.refid, "No convoys found. Type '/convoy start' to start a new convoy." )
+      SendChatToMember( event.refid, "No convoys found. Type '/convoy new' to start a new convoy." )
 
     end
 

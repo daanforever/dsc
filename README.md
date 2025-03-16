@@ -35,7 +35,7 @@ luaApiAddons : [
 
 ### Usage
 
-Once installed, the addon will start working automatically. You can manage its features via the server console or by editing the `dan_dsc.json` file.
+Once installed, the addon will start working automatically. You can manage its features via the server console or by editing the `lua_config\dan_dsc_config.json` file.
 
 ## Key Files
 
