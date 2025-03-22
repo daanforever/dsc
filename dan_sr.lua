@@ -295,7 +295,17 @@ local function handle_partipant_lap( event )
     (event.attributes.Sector3Time > 0)
   then
 
-    local delta = 1 / temp[member.steamid]
+    local delta = 0
+
+    if temp[member.steamid] == 0 then
+
+      delta = 0.25
+
+    else
+
+      delta = 1 / ( temp[member.steamid] )
+
+    end
 
     local message = "SR: " .. member.name .. " increase " .. trunc2( temp[member.steamid] ) .. " (+" .. trunc2(delta) .. ")"
     log(message)
